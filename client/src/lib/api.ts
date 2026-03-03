@@ -58,6 +58,7 @@ const getSupabaseAccessToken = () => {
 export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Promise<T> => {
   const { method = 'GET', body, auth = false, headers = {} } = options;
   const baseUrls = getApiBaseUrls();
+  const shouldDebugRegister = path.includes('/api/auth/register');
 
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -74,8 +75,19 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
   let response: Response | null = null;
   let lastFetchError: unknown = null;
 
-  for (const baseUrl of baseUrls) {
+  for (const [index, baseUrl] of baseUrls.entries()) {
+    const isLastBaseUrl = index === baseUrls.length - 1;
     const url = baseUrl ? `${baseUrl}${path}` : path;
+
+    if (shouldDebugRegister) {
+      console.info('[apiRequest][register] Attempt', {
+        method,
+        url,
+        attempt: index + 1,
+        totalAttempts: baseUrls.length,
+      });
+    }
+
     try {
       response = await fetch(url, {
         method,
@@ -83,15 +95,39 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
         body: body ? JSON.stringify(body) : undefined,
       });
 
-      // If target host returns a 5xx/invalid gateway style error, try the next base URL.
-      if (response.status >= 500 && baseUrl !== baseUrls[baseUrls.length - 1]) {
+      const contentType = (response.headers.get('content-type') || '').toLowerCase();
+      const isProxyStyleBadRequest = response.status === 400 && !contentType.includes('application/json');
+
+      if (shouldDebugRegister) {
+        console.info('[apiRequest][register] Response', {
+          url,
+          status: response.status,
+          contentType,
+        });
+      }
+
+      // If target host returns a proxy/gateway style failure, try the next base URL.
+      if (!isLastBaseUrl && (response.status >= 500 || isProxyStyleBadRequest)) {
+        if (shouldDebugRegister) {
+          console.warn('[apiRequest][register] Falling back to next API base URL', {
+            url,
+            status: response.status,
+            isProxyStyleBadRequest,
+          });
+        }
         continue;
       }
 
       break;
     } catch (err) {
       lastFetchError = err;
-      if (baseUrl === baseUrls[baseUrls.length - 1]) {
+      if (shouldDebugRegister) {
+        console.error('[apiRequest][register] Network error on attempt', {
+          url,
+          error: err,
+        });
+      }
+      if (isLastBaseUrl) {
         throw new NetworkError(
           err instanceof Error && err.message?.toLowerCase().includes('fetch')
             ? 'Unable to reach the server. Please check your connection.'
@@ -102,6 +138,9 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
   }
 
   if (!response) {
+    if (shouldDebugRegister) {
+      console.error('[apiRequest][register] No response from any API base URL', { baseUrls });
+    }
     throw new NetworkError(
       lastFetchError instanceof Error && lastFetchError.message?.toLowerCase().includes('fetch')
         ? 'Unable to reach the server. Please check your connection.'
@@ -127,6 +166,12 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
       }
     } catch {
       // response.text() could fail; keep statusText
+    }
+    if (shouldDebugRegister) {
+      console.error('[apiRequest][register] API error response', {
+        status: response.status,
+        message,
+      });
     }
     throw new ApiError(message, response.status);
   }
