@@ -12,7 +12,6 @@ module.exports = {
       watch: false,
       max_memory_restart: '1G',
 
-      // 🔥 Explicitly define environment
       env: {
         NODE_ENV: 'production',
         PORT: 3006
@@ -26,11 +25,11 @@ module.exports = {
       time: true
     },
 
+    // 🔥 FIXED FRONTEND CONFIG
     {
       name: 'sleazzy-fe',
-      script: 'serve',
-      args: 'dist -l 3005',
-      interpreter: 'npx',
+      script: 'npx',
+      args: 'serve -s dist -l 3005',
       cwd: '/var/www/sleazzy/client',
 
       instances: 1,
@@ -38,7 +37,6 @@ module.exports = {
 
       autorestart: true,
       watch: false,
-      max_memory_restart: '256M',
 
       env: {
         NODE_ENV: 'production'
@@ -65,7 +63,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         WEBHOOK_SECRET: process.env.WEBHOOK_SECRET || '',
-        PORT: 4000 // optional - if webhook needs separate port
+        PORT: 4000
       },
 
       error_file: '/var/www/sleazzy/logs/webhook-error.log',
