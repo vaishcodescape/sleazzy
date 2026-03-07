@@ -17,12 +17,8 @@ import {
     SelectContent,
     SelectItem,
 } from './ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Calendar } from './ui/calendar';
-import { TimePicker } from './ui/time-picker';
 import { apiRequest, ApiVenue } from '../lib/api';
-import { Loader2, Plus, Calendar as CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2, Plus } from 'lucide-react';
 
 type Club = {
     id: string;
@@ -45,14 +41,12 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
     const [eventName, setEventName] = useState('');
     const [sbgClubId, setSbgClubId] = useState<string | null>(null);
     const [selectedVenues, setSelectedVenues] = useState<string[]>([]);
-    const [date, setDate] = useState<Date | undefined>(undefined);
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [eventType, setEventType] = useState('');
     const [expectedAttendees, setExpectedAttendees] = useState('');
     const [isPublic, setIsPublic] = useState(false);
 
-    const [datePickerOpen, setDatePickerOpen] = useState(false);
     const [venues, setVenues] = useState<ApiVenue[]>([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -82,7 +76,6 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
         if (open) {
             setEventName('');
             setSelectedVenues([]);
-            setDate(undefined);
             setStartTime('');
             setEndTime('');
             setEventType('');
@@ -141,8 +134,8 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
             setError('Please select at least one venue');
             return;
         }
-        if (!date || !startTime || !endTime) {
-            setError('Date, start time, and end time are required');
+        if (!startTime || !endTime) {
+            setError('Start and end times are required');
             return;
         }
 
@@ -150,14 +143,6 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
         setError(null);
 
         try {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const dateString = `${year}-${month}-${day}`;
-
-            const startDateTime = new Date(`${dateString}T${startTime}:00`);
-            const endDateTime = new Date(`${dateString}T${endTime}:00`);
-
             await apiRequest('/api/admin/bookings', {
                 method: 'POST',
                 auth: true,
@@ -165,8 +150,8 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                     club_id: sbgClubId,
                     venue_ids: selectedVenues,
                     event_name: eventName.trim(),
-                    start_time: startDateTime.toISOString(),
-                    end_time: endDateTime.toISOString(),
+                    start_time: new Date(startTime).toISOString(),
+                    end_time: new Date(endTime).toISOString(),
                     event_type: eventType || undefined,
                     expected_attendees: expectedAttendees
                         ? parseInt(expectedAttendees)
@@ -194,7 +179,7 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                 </DialogHeader>
 
                 {error && (
-                    <div className="text-sm text-error bg-error/10 border border-error/20 rounded-md px-3 py-2">
+                    <div className="text-sm text-error bg-error/10 border border-error/20 rounded-lg px-3 py-2">
                         {error}
                     </div>
                 )}
@@ -208,14 +193,13 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                             value={eventName}
                             onChange={(e) => setEventName(e.target.value)}
                             placeholder="Enter event name"
-                            className="bg-card border-borderSoft"
                         />
                     </div>
 
                     {/* Club (fixed to SBG) */}
                     <div className="grid gap-2">
                         <Label>Organizing Club</Label>
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-borderSoft bg-hoverSoft/50 text-sm text-textPrimary">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borderSoft bg-hoverSoft text-sm text-textPrimary">
                             <span className="font-medium">SBG</span>
                             <span className="text-textMuted text-xs">(Student Body Government)</span>
                         </div>
@@ -224,10 +208,10 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                         )}
                     </div>
 
-                    {/* Venues */}
+                    {/* Venues (multi-select as checkboxes) */}
                     <div className="grid gap-2">
                         <Label>Venues</Label>
-                        <div className="max-h-36 overflow-y-auto rounded-md border border-borderSoft p-2 space-y-1 bg-card">
+                        <div className="max-h-36 overflow-y-auto rounded-lg border border-borderSoft p-2 space-y-1">
                             {venues.length === 0 ? (
                                 <p className="text-xs text-textMuted py-2 text-center">Loading venues...</p>
                             ) : (
@@ -235,7 +219,7 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                                     <label
                                         key={v.id}
                                         className={`
-                                            flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors
+                                            flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors
                                             ${selectedVenues.includes(v.id)
                                                 ? 'bg-brand/10 text-brand font-medium'
                                                 : 'hover:bg-hoverSoft text-textPrimary'
@@ -265,63 +249,25 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                         )}
                     </div>
 
-                    {/* Date / Time */}
-                    <div className="grid gap-2">
-                        <Label>Schedule</Label>
-                        <div className="grid gap-3 p-3 rounded-md border border-borderSoft bg-card">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs text-textSecondary">Date</Label>
-                                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className={cn(
-                                                "w-full h-10 justify-start text-left font-medium border-borderSoft hover:bg-hoverSoft transition-all bg-card text-textPrimary rounded-md shadow-sm",
-                                                !date && "text-textMuted"
-                                            )}
-                                            onClick={() => setDatePickerOpen(true)}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4 text-brand opacity-70" />
-                                            {date ? (
-                                                <span>
-                                                    {date.toLocaleDateString('en-US', {
-                                                        weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
-                                                    })}
-                                                </span>
-                                            ) : (
-                                                <span>Pick a date</span>
-                                            )}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-3" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={date}
-                                            onSelect={(d) => { setDate(d); setDatePickerOpen(false); }}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs text-textSecondary">Start Time</Label>
-                                    <TimePicker
-                                        value={startTime}
-                                        onChange={setStartTime}
-                                        className="h-10 rounded-md"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-xs text-textSecondary">End Time</Label>
-                                    <TimePicker
-                                        value={endTime}
-                                        onChange={setEndTime}
-                                        className="h-10 rounded-md"
-                                    />
-                                </div>
-                            </div>
+                    {/* Start / End Time */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="grid gap-2">
+                            <Label htmlFor="add-start-time">Start Time</Label>
+                            <Input
+                                id="add-start-time"
+                                type="datetime-local"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.target.value)}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="add-end-time">End Time</Label>
+                            <Input
+                                id="add-end-time"
+                                type="datetime-local"
+                                value={endTime}
+                                onChange={(e) => setEndTime(e.target.value)}
+                            />
                         </div>
                     </div>
 
@@ -329,7 +275,7 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                     <div className="grid gap-2">
                         <Label>Event Type</Label>
                         <Select value={eventType} onValueChange={setEventType}>
-                            <SelectTrigger className="bg-card">
+                            <SelectTrigger>
                                 <SelectValue placeholder="Select type (optional)" />
                             </SelectTrigger>
                             <SelectContent>
@@ -343,9 +289,9 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                     </div>
 
                     {coCurricularWarning && (
-                        <div className={`text-sm rounded-md px-3 py-2 border ${coCurricularWarning.startsWith('SBG has already')
-                            ? 'text-error bg-error/10 border-error/20'
-                            : 'text-warning bg-warning/10 border-warning/20'
+                        <div className={`text-sm rounded-lg px-3 py-2 border ${coCurricularWarning.startsWith('SBG has already')
+                                ? 'text-error bg-error/10 border-error/20'
+                                : 'text-warning bg-warning/10 border-warning/20'
                             }`}>
                             {coCurricularWarning}
                         </div>
@@ -360,16 +306,12 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                             value={expectedAttendees}
                             onChange={(e) => setExpectedAttendees(e.target.value)}
                             placeholder="e.g. 100 (optional)"
-                            className="bg-card"
                         />
                     </div>
 
                     {/* Public Visibility */}
-                    <div className="flex items-center justify-between p-3 rounded-md border border-borderSoft bg-card">
-                        <div className="grid gap-0.5">
-                            <Label htmlFor="add-public">Publicly Visible</Label>
-                            <p className="text-xs text-textSecondary">Show on landing page calendar</p>
-                        </div>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="add-public">Publicly visible</Label>
                         <button
                             id="add-public"
                             type="button"
@@ -386,7 +328,7 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                             <span
                                 className={`
                                     pointer-events-none inline-block h-5 w-5 rounded-full
-                                    bg-white shadow-sm transform transition-transform duration-200
+                                    bg-white shadow-lg transform transition-transform duration-200
                                     ${isPublic ? 'translate-x-5' : 'translate-x-0'}
                                 `}
                             />
@@ -402,7 +344,7 @@ const AddBookingDialog: React.FC<Props> = ({ open, onOpenChange, onCreated }) =>
                     >
                         Cancel
                     </Button>
-                    <Button onClick={handleCreate} disabled={saving || coCurricularWarning.startsWith('SBG has already')} className="gap-2 bg-brand text-bgMain">
+                    <Button onClick={handleCreate} disabled={saving || coCurricularWarning.startsWith('SBG has already')} className="gap-2">
                         {saving ? (
                             <Loader2 size={14} className="animate-spin" />
                         ) : (

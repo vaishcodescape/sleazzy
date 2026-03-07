@@ -394,7 +394,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
         </motion.div>
 
         <motion.h1
-          className="text-5xl md:text-6xl font-extrabold tracking-tighter text-textPrimary"
+          className="text-5xl md:text-6xl font-extrabold tracking-tighter bg-gradient-to-r from-brand via-purple-500 to-pink-500 bg-clip-text text-transparent"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -415,12 +415,12 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="tech-card overflow-hidden shadow-md"
+        className="glass-card rounded-3xl overflow-hidden shadow-2xl shadow-brand/20 border-white/30 dark:border-white/10 backdrop-blur-xl"
       >
-        {/* Progress Line */}
-        <div className="h-1 w-full bg-borderSoft relative overflow-hidden">
+        {/* Enhanced Progress Decoration */}
+        <div className="h-2 w-full bg-gradient-to-r from-borderSoft via-brand/20 to-transparent relative overflow-hidden">
           <motion.div
-            className="absolute top-0 left-0 h-full bg-brand"
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-brand to-brandLink"
             initial={{ width: "0%" }}
             animate={{ width: isSubmitting ? "100%" : "35%" }}
             transition={{ duration: 1.5, ease: "circOut" }}
@@ -440,15 +440,15 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-0">
 
-            {/* Sidebar / Left Panel Context Info */}
-            <div className="lg:col-span-4 bg-hoverSoft/30 p-8 space-y-8 lg:border-r border-borderSoft lg:border-b-0 border-b">
+            {/* Sidebar / Left Panel - Enhanced Context Info */}
+            <div className="lg:col-span-4 bg-gradient-to-b from-hoverSoft/50 to-hoverSoft/20 p-8 space-y-8 lg:border-r border-borderSoft/50 lg:border-b-0 border-b">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="h-8 w-1.5 bg-gradient-to-b from-brand to-brandLink rounded-full" />
                   <h3 className="text-lg font-bold text-textPrimary">Key Guidelines</h3>
                 </div>
                 <div className="space-y-3">
-                  <div className="p-4 bg-card rounded-lg border border-borderSoft shadow-sm hover:shadow hover:border-brand/40 transition-all">
+                  <div className="p-4 bg-white/60 dark:bg-white/5 rounded-xl border border-borderSoft/60 shadow-sm hover:shadow-md hover:border-brand/30 transition-all backdrop-blur-sm">
                     <div className="flex items-start gap-3">
                       <div className="h-2 w-2 rounded-full bg-brand mt-2 shrink-0" />
                       <div>
@@ -457,7 +457,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 bg-card rounded-lg border border-borderSoft shadow-sm hover:shadow hover:border-success/40 transition-all">
+                  <div className="p-4 bg-white/60 dark:bg-white/5 rounded-xl border border-borderSoft/60 shadow-sm hover:shadow-md hover:border-success/30 transition-all backdrop-blur-sm">
                     <div className="flex items-start gap-3">
                       <div className="h-2 w-2 rounded-full bg-success mt-2 shrink-0" />
                       <div>
@@ -466,7 +466,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 bg-card rounded-lg border border-borderSoft shadow-sm hover:shadow hover:border-warning/40 transition-all">
+                  <div className="p-4 bg-white/60 dark:bg-white/5 rounded-xl border border-borderSoft/60 shadow-sm hover:shadow-md hover:border-warning/30 transition-all backdrop-blur-sm">
                     <div className="flex items-start gap-3">
                       <div className="h-2 w-2 rounded-full bg-warning mt-2 shrink-0" />
                       <div>
@@ -476,9 +476,9 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                     </div>
                   </div>
                   {warnings.coCurricularLimit && (
-                    <div className={`p-4 rounded-lg border shadow-sm transition-all ${warnings.coCurricularLimit.startsWith('This club has already')
-                      ? 'bg-error/5 border-error/30'
-                      : 'bg-warning/5 border-warning/30'
+                    <div className={`p-4 rounded-xl border shadow-sm hover:shadow-md transition-all backdrop-blur-sm ${warnings.coCurricularLimit.startsWith('This club has already')
+                      ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 hover:border-red-300'
+                      : 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 hover:border-amber-300'
                       }`}>
                       <div className="flex items-start gap-3">
                         <div className={`h-2 w-2 rounded-full mt-2 shrink-0 ${warnings.coCurricularLimit.startsWith('This club has already') ? 'bg-red-500' : 'bg-amber-500'
@@ -499,7 +499,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                     <div className="h-2 w-2 rounded-full bg-brand" />
                     Logged in as
                   </h3>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-borderSoft">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-brand/5 border border-brand/20">
                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand to-brandLink flex items-center justify-center text-white font-bold text-lg shadow-lg">
                       {currentUser.name.charAt(0).toUpperCase()}
                     </div>
@@ -530,7 +530,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                       value={formData.eventName}
                       onChange={(e) => handleChange('eventName', e.target.value)}
                       placeholder="e.g. Hackathon Kickoff, Tech Summit..."
-                      className="h-10 bg-card border-borderSoft focus:border-brand focus:ring-1 focus:ring-brand text-base rounded-md font-medium shadow-sm transition-all"
+                      className="h-12 bg-white/70 dark:bg-white/5 border-borderSoft focus:border-brand focus:ring-4 focus:ring-brand/20 transition-all text-base rounded-xl font-medium shadow-sm"
                     />
                   </div>
 
@@ -594,9 +594,9 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full h-10 justify-start text-left font-medium border-borderSoft hover:bg-hoverSoft/50 transition-all bg-card text-textPrimary rounded-md shadow-sm",
+                            "w-full h-12 justify-start text-left font-semibold border-borderSoft hover:bg-hoverSoft/50 transition-all bg-white/70 dark:bg-white/5 text-textPrimary rounded-xl shadow-sm",
                             !formData.date && "text-textMuted",
-                            warnings.timeline && "border-error/50 ring-1 ring-error"
+                            warnings.timeline && "border-error/50 ring-2 ring-error/20 bg-error/5"
                           )}
                           onClick={() => setDatePickerOpen(true)}
                         >
@@ -638,7 +638,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                     <TimePicker
                       value={formData.startTime}
                       onChange={(v) => handleChange('startTime', v)}
-                      className={cn("h-10 rounded-md", warnings.hours && "border-error transition-all")}
+                      className={cn("h-12 rounded-xl", warnings.hours && "border-error/50 ring-2 ring-error/20")}
                     />
                   </div>
 
@@ -647,7 +647,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                     <TimePicker
                       value={formData.endTime}
                       onChange={(v) => handleChange('endTime', v)}
-                      className={cn("h-10 rounded-md", warnings.hours && "border-error transition-all")}
+                      className={cn("h-12 rounded-xl", warnings.hours && "border-error/50 ring-2 ring-error/20")}
                     />
                   </div>
 
@@ -688,7 +688,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                         variant="outline"
                         role="combobox"
                         className={cn(
-                          "w-full h-10 justify-between border-borderSoft hover:bg-hoverSoft transition-all bg-card text-textPrimary rounded-md shadow-sm font-medium",
+                          "w-full h-12 justify-between border-borderSoft hover:bg-hoverSoft/50 transition-all bg-white/70 dark:bg-white/5 text-textPrimary rounded-xl shadow-sm font-semibold",
                           formData.venueIds.length === 0 && "text-textMuted"
                         )}
                       >
@@ -842,10 +842,10 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                   type="submit"
                   disabled={hasErrors || isSubmitting || !formData.eventName || !formData.date || !formData.startTime || !formData.endTime || formData.venueIds.length === 0}
                   className={cn(
-                    "w-full h-12 text-base font-bold rounded-lg shadow-sm transition-transform flex items-center justify-center gap-2",
+                    "w-full h-14 text-base font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2",
                     hasErrors || isSubmitting || !formData.eventName || !formData.date || !formData.startTime || !formData.endTime || formData.venueIds.length === 0
-                      ? "bg-borderSoft text-textMuted cursor-not-allowed"
-                      : "bg-brand text-bgMain hover:scale-[1.02] active:scale-[0.98]"
+                      ? "bg-textMuted/50 opacity-60 cursor-not-allowed"
+                      : "bg-gradient-to-r from-brand via-brandLink to-purple-500 hover:shadow-2xl hover:shadow-brand/30 text-white active:scale-95"
                   )}
                 >
                   {isSubmitting ? (

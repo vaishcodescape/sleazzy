@@ -12,7 +12,7 @@ import {
     X,
 } from 'lucide-react';
 import { apiRequest, type ApiBooking } from '../lib/api';
-
+import { GradientBackground } from '../components/gradient-background';
 import { ThemeToggle } from '../components/theme-toggle';
 import { Button } from '../components/ui/button';
 
@@ -171,7 +171,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
     const getColor = (type?: string) => EVENT_TYPE_COLORS[type || ''] || DEFAULT_COLOR;
 
     return (
-        <div className="min-h-screen relative overflow-hidden bg-bgMain">
+        <div className="min-h-screen relative overflow-hidden bg-bgMain dark:bg-transparent">
+            <GradientBackground />
+
             {/* Top bar */}
             <header className="relative z-20 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
                 <motion.div
@@ -193,7 +195,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                     <ThemeToggle />
                     <Button
                         onClick={onGoToLogin}
-                        className="rounded-md h-9 px-6 font-semibold bg-brand text-bgMain hover:scale-105 transition-transform"
+                        className="rounded-xl h-10 px-6 font-semibold bg-gradient-to-r from-brand to-brandLink text-white shadow-lg shadow-brand/20 hover:shadow-xl hover:shadow-brand/30 transition-all"
                     >
                         Sign In
                         <ArrowRight size={16} className="ml-1" />
@@ -202,22 +204,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </header>
 
             {/* Hero */}
-            <section className="relative z-10 text-center px-6 pt-16 pb-12 max-w-5xl mx-auto">
+            <section className="relative z-10 text-center px-6 pt-10 pb-8 max-w-4xl mx-auto">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-borderSoft bg-card mb-8 shadow-sm"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand/10 border border-brand/20 mb-6"
                 >
-                    <CalendarIcon size={14} className="text-textSecondary" />
-                    <span className="text-sm font-medium text-textPrimary">Campus Event Calendar</span>
+                    <Sparkles size={14} className="text-brand" />
+                    <span className="text-sm font-semibold text-brand">Campus Event Calendar</span>
                 </motion.div>
 
                 <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1 }}
-                    className="text-5xl sm:text-6xl md:text-7xl lg:text-[5rem] font-extrabold tracking-tighter text-textPrimary leading-[1.05] pb-2"
+                    className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tighter bg-gradient-to-r from-brand via-purple-500 to-pink-500 bg-clip-text text-transparent leading-tight"
                 >
                     Discover What's
                     <br />
@@ -228,7 +230,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
-                    className="mt-8 text-lg sm:text-xl text-textSecondary max-w-2xl mx-auto leading-relaxed font-medium"
+                    className="mt-6 text-lg text-textSecondary max-w-2xl mx-auto leading-relaxed"
                 >
                     Browse upcoming events from clubs across campus.
                     Find something you love, or sign in to book your own venue.
@@ -264,15 +266,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                 transition={{ duration: 0.6, delay: 0.25 }}
                 className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-16"
             >
-                <div className="tech-card overflow-hidden">
+                <div className="rounded-2xl border border-borderSoft/60 bg-white/70 dark:bg-white/5 backdrop-blur-xl shadow-2xl shadow-brand/5 overflow-hidden">
                     {/* Calendar header */}
-                    <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-borderSoft bg-hoverSoft/30">
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-borderSoft/40 bg-white/50 dark:bg-white/[0.03]">
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={goToToday} className="rounded-md text-xs font-medium h-8 bg-card">
+                            <Button variant="outline" size="sm" onClick={goToToday} className="rounded-lg text-xs font-semibold h-8">
                                 Today
                             </Button>
                             <div className="flex items-center">
-                                <Button variant="ghost" size="sm" onClick={goToPrevMonth} className="h-8 w-8 p-0 rounded-md">
+                                <Button variant="ghost" size="sm" onClick={goToPrevMonth} className="h-8 w-8 p-0 rounded-lg">
                                     <ChevronLeft size={18} />
                                 </Button>
                                 <Button variant="ghost" size="sm" onClick={goToNextMonth} className="h-8 w-8 p-0 rounded-lg">
@@ -343,7 +345,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                                                 className={`
                           inline-flex items-center justify-center text-xs sm:text-sm font-semibold
                           ${isToday
-                                                        ? 'h-7 w-7 rounded-full bg-brand text-bgMain'
+                                                        ? 'h-7 w-7 rounded-full bg-brand text-white shadow-md shadow-brand/30'
                                                         : 'text-textPrimary'
                                                     }
                         `}
@@ -389,8 +391,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                 </div>
 
                 {/* Upcoming events list */}
-                <div className="mt-6 tech-card overflow-hidden">
-                    <div className="px-4 sm:px-6 py-4 border-b border-borderSoft bg-hoverSoft/30">
+                <div className="mt-6 rounded-2xl border border-borderSoft/60 bg-white/70 dark:bg-white/5 backdrop-blur-xl shadow-2xl shadow-brand/5 overflow-hidden">
+                    <div className="px-4 sm:px-6 py-4 border-b border-borderSoft/40 bg-white/50 dark:bg-white/[0.03]">
                         <h3 className="text-base sm:text-lg font-bold text-textPrimary tracking-tight">Upcoming Events</h3>
                         <p className="text-xs sm:text-sm text-textSecondary mt-0.5">
                             Browse all scheduled public events in chronological order.
@@ -465,7 +467,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                             exit={{ scale: 0.95, opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                             onClick={e => e.stopPropagation()}
-                            className="w-full max-w-md bg-card rounded-lg shadow-xl border border-borderSoft overflow-hidden"
+                            className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-borderSoft/60 overflow-hidden"
                         >
                             {/* Color bar */}
                             <div className={`h-2 ${getColor(selectedEvent.eventType).dot}`} />

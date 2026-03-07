@@ -262,7 +262,7 @@ const MasterSchedule: React.FC = () => {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.03 }}
                                     >
-                                        <Card className="rounded-lg overflow-hidden border border-borderSoft bg-card hover:border-brand/50 transition-colors shadow-sm">
+                                        <Card className="rounded-2xl rounded-xl overflow-hidden hover:border-brand/30 transition-colors">
                                             <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
                                                 <div className="flex-1">
                                                     <div className="flex items-start justify-between mb-2">

@@ -104,13 +104,13 @@ const MyBookings: React.FC = () => {
       {isLoading ? (
         <div className="grid gap-6">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="border border-borderSoft rounded-lg p-6 bg-card">
-              <Skeleton className="h-32 w-full rounded-md" />
+            <Card key={i} className="border border-borderSoft rounded-2xl p-6 glass-card">
+              <Skeleton className="h-32 w-full rounded-xl" />
             </Card>
           ))}
         </div>
       ) : !error && myBookings.length === 0 ? (
-        <Card className="border-2 border-dashed border-borderSoft rounded-lg p-16 text-center bg-card shadow-none">
+        <Card className="border-2 border-dashed border-borderSoft rounded-2xl p-16 text-center glass-card">
           <Calendar className="h-16 w-16 mx-auto text-textMuted/40 mb-4" />
           <p className="text-textMuted text-lg font-semibold">No bookings found yet.</p>
           <p className="text-textMuted/70 mt-2">Start by booking a venue to see your reservations here.</p>
@@ -129,20 +129,20 @@ const MyBookings: React.FC = () => {
               >
                 <Card
                   className={cn(
-                    "border rounded-lg overflow-hidden bg-card hover:shadow-md transition-all duration-300",
+                    "border rounded-2xl overflow-hidden glass-card hover:shadow-2xl hover:shadow-brand/10 transition-all duration-300 hover:-translate-y-1",
                     isPast
                       ? "border-borderSoft/50 opacity-75"
-                      : "border-borderSoft hover:border-brand/50"
+                      : "border-brand/30 bg-gradient-to-br from-brand/5 to-transparent"
                   )}
                 >
                   <CardContent className="p-6 sm:p-8">
                     <div className="flex flex-col md:flex-row gap-6 md:gap-8">
                       {/* Enhanced Date Box */}
                       <div className={cn(
-                        "w-full md:w-28 h-28 rounded-lg flex flex-col items-center justify-center shrink-0 border border-borderSoft",
+                        "w-full md:w-28 h-28 rounded-2xl flex flex-col items-center justify-center shrink-0 border-2 shadow-lg",
                         isPast
-                          ? 'bg-hoverSoft/40 text-textMuted'
-                          : 'bg-card text-brand'
+                          ? 'bg-hoverSoft/40 border-borderSoft/50 text-textMuted'
+                          : 'bg-gradient-to-br from-brand to-brandLink text-white border-brand/50 shadow-brand/30'
                       )}>
                         <span className="text-xs font-bold uppercase tracking-wider">
                           {new Date(booking.date).toLocaleDateString('en-US', { month: 'short' })}
