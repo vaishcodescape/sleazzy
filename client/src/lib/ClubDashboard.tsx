@@ -65,21 +65,33 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
     // We'll figure it out once events load by checking myEvents[0]?.clubId
     const socket = getSocket();
 
-    const handleStatusChanged = (payload: { eventName: string; status: 'approved' | 'rejected'; clubId: string }) => {
+    const handleStatusChanged = (payload: { eventName: string; status: 'approved' | 'rejected' | 'deleted'; clubId: string }) => {
       if (payload.status === 'approved') {
         toast.success(`"${payload.eventName}" has been approved!`, {
           description: 'Your booking is now confirmed.',
         });
-      } else {
+      } else if (payload.status === 'rejected') {
         toast.warning(`"${payload.eventName}" was not approved`, {
           description: 'The admin has reviewed and declined this booking.',
+        });
+      } else if (payload.status === 'deleted') {
+        toast.info(`"${payload.eventName}" has been removed`, {
+          description: 'This event is no longer scheduled.',
         });
       }
       fetchEvents(); // refresh to show updated status
     };
 
+    const handleEventsUpdated = () => {
+      fetchEvents();
+    };
+
     socket.on('booking:status_changed', handleStatusChanged);
-    return () => { socket.off('booking:status_changed', handleStatusChanged); };
+    socket.on('events:updated', handleEventsUpdated);
+    return () => {
+      socket.off('booking:status_changed', handleStatusChanged);
+      socket.off('events:updated', handleEventsUpdated);
+    };
   }, [fetchEvents]);
 
   const getVenueName = (id: string) => venues.find(v => v.id === id)?.name || id;
@@ -217,8 +229,8 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
 
             <CardContent className="p-4 sm:p-6">
               <div className="flex flex-col md:flex-row gap-6 sm:gap-8">
-                {/* Calendar */}
-                <div className="flex-1 flex justify-center">
+                {/* Calendar container - centered but spanning more width */}
+                <div className="flex-1 flex justify-center lg:justify-start overflow-hidden">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
@@ -232,8 +244,8 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
                   />
                 </div>
 
-                {/* Selected Date Details */}
-                <div className="md:w-64 border-t md:border-t-0 md:border-l border-borderSoft md:pl-6 pt-4 md:pt-0 flex flex-col">
+                {/* Selected Date Details - filling available space */}
+                <div className="lg:flex-1 border-t lg:border-t-0 lg:border-l border-borderSoft lg:pl-6 pt-4 lg:pt-0 flex flex-col min-w-0">
                   <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                     {selectedDate ? selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : 'Select a date'}
                   </h4>

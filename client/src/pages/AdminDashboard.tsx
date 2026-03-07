@@ -97,7 +97,6 @@ const AdminDashboard: React.FC = () => {
   React.useEffect(() => {
     const socket = getSocket();
     socket.emit('join:admin');
-
     const handleBookingNew = (payload: { eventName: string; clubName: string; venueNames: string }) => {
       toast.message('New Booking Request', {
         description: `${payload.clubName} requested "${payload.eventName}" at ${payload.venueNames}`,
@@ -105,8 +104,16 @@ const AdminDashboard: React.FC = () => {
       fetchData(); // refresh the dashboard
     };
 
+    const handleEventsUpdated = () => {
+      fetchData();
+    };
+
     socket.on('booking:new', handleBookingNew);
-    return () => { socket.off('booking:new', handleBookingNew); };
+    socket.on('events:updated', handleEventsUpdated);
+    return () => {
+      socket.off('booking:new', handleBookingNew);
+      socket.off('events:updated', handleEventsUpdated);
+    };
   }, [fetchData]);
 
   const handleAction = async (bookingIds: string[], status: 'approved' | 'rejected') => {
@@ -338,8 +345,8 @@ const AdminDashboard: React.FC = () => {
 
           <CardContent className="p-4 sm:p-6">
             <div className="flex flex-col md:flex-row gap-6 sm:gap-8">
-              {/* Calendar */}
-              <div className="flex-1 flex justify-center">
+              {/* Calendar container - centered but spanning more width */}
+              <div className="flex-1 flex justify-center lg:justify-start overflow-hidden">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -353,8 +360,8 @@ const AdminDashboard: React.FC = () => {
                 />
               </div>
 
-              {/* Selected Date Details */}
-              <div className="md:w-72 border-t md:border-t-0 md:border-l border-borderSoft md:pl-6 pt-4 md:pt-0 flex flex-col">
+              {/* Selected Date Details - filling the remaining space */}
+              <div className="flex-1 border-t lg:border-t-0 lg:border-l border-borderSoft lg:pl-6 pt-4 lg:pt-0 flex flex-col min-w-0">
                 <h4 className="text-sm font-semibold text-textMuted uppercase tracking-wider mb-4">
                   {selectedDate ? selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : 'Select a date'}
                 </h4>

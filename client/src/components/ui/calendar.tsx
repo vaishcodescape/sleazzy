@@ -69,7 +69,7 @@ function Calendar({
         <DayPicker
           showOutsideDays={showOutsideDays}
           className={cn(
-            "group/calendar p-6 rounded-xl [--cell-size:2.75rem] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
+            "group/calendar p-3 sm:p-6 rounded-xl [--cell-size:2.25rem] sm:[--cell-size:2.75rem] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
             String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
             String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
             className
@@ -140,17 +140,17 @@ function Calendar({
               defaultClassNames.week_number
             ),
             day: cn(
-              "group/day relative aspect-square h-full w-full select-none p-0 text-center",
+              "group/day relative select-none p-0 text-center bg-transparent border-none hover:bg-transparent",
               defaultClassNames.day
             ),
             range_start: cn(
-              "bg-brand/10 rounded-l-lg",
+              "bg-transparent",
               defaultClassNames.range_start
             ),
-            range_middle: cn("rounded-none bg-brand/5", defaultClassNames.range_middle),
-            range_end: cn("bg-brand/10 rounded-r-lg", defaultClassNames.range_end),
+            range_middle: cn("bg-transparent", defaultClassNames.range_middle),
+            range_end: cn("bg-transparent", defaultClassNames.range_end),
             today: cn(
-              "bg-brand/5 text-brand font-semibold rounded-lg border-2 border-brand/30 data-[selected=true]:bg-brand data-[selected=true]:text-white data-[selected=true]:border-brand data-[selected=true]:rounded-lg",
+              "font-bold text-brand bg-transparent",
               defaultClassNames.today
             ),
             outside: cn(
@@ -258,7 +258,7 @@ function CalendarDayButton({
         transition: { duration: 0.1 }
       } : {}}
       className={cn(
-        "w-full h-full flex items-center justify-center rounded-xl transition-shadow duration-300",
+        "w-full h-full flex items-center justify-center rounded-full transition-shadow duration-300",
         hasEvents && !isDisabled && "cursor-pointer hover:shadow-[0_6px_24px_-4px_rgba(99,102,241,0.4)] dark:hover:shadow-[0_6px_24px_-4px_rgba(129,140,248,0.35)]"
       )}
     >
@@ -272,18 +272,17 @@ function CalendarDayButton({
         data-range-end={isRangeEnd}
         data-range-middle={isRangeMiddle}
         className={cn(
-          "flex aspect-square h-auto w-full min-w-[--cell-size] flex-col gap-0.5 font-medium leading-none rounded-xl transition-all duration-200 relative text-textPrimary",
-          "data-[selected-single=true]:bg-brand data-[selected-single=true]:text-white data-[selected-single=true]:font-semibold data-[selected-single=true]:shadow-sm",
+          "flex aspect-square h-auto w-full min-w-[--cell-size] flex-col gap-0.5 font-medium leading-none rounded-full transition-all duration-200 relative text-textPrimary",
+          "data-[selected-single=true]:bg-brand data-[selected-single=true]:text-white data-[selected-single=true]:font-semibold data-[selected-single=true]:shadow-sm data-[selected-single=true]:border-transparent data-[selected-single=true]:rounded-full",
           "data-[range-middle=true]:bg-brand/10 data-[range-middle=true]:text-brand data-[range-middle=true]:rounded-none",
-          "data-[range-start=true]:bg-brand data-[range-start=true]:text-white data-[range-start=true]:font-semibold data-[range-start=true]:rounded-l-lg data-[range-start=true]:shadow-sm",
-          "data-[range-end=true]:bg-brand data-[range-end=true]:text-white data-[range-end=true]:font-semibold data-[range-end=true]:rounded-r-lg data-[range-end=true]:shadow-sm",
+          "data-[range-start=true]:bg-brand data-[range-start=true]:text-white data-[range-start=true]:font-semibold data-[range-start=true]:rounded-l-full data-[range-start=true]:shadow-sm data-[range-start=true]:border-transparent",
+          "data-[range-end=true]:bg-brand data-[range-end=true]:text-white data-[range-end=true]:font-semibold data-[range-end=true]:rounded-r-full data-[range-end=true]:shadow-sm data-[range-end=true]:border-transparent",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2 focus-visible:z-10",
-          !isSelected && !isRangeStart && !isRangeEnd && !isDisabled && "hover:bg-hoverSoft hover:text-textPrimary",
-          hasEvents && !isSelected && !isDisabled && "ring-1 ring-brand/20 hover:ring-brand/40",
-          isToday && !isSelected && "border-2 border-brand/50 bg-brand/5",
+          !isSelected && !isRangeStart && !isRangeEnd && !isDisabled && "hover:bg-hoverSoft hover:rounded-full hover:text-textPrimary",
+          hasEvents && !isSelected && !isDisabled && "ring-1 ring-brand/20 hover:ring-brand/40 hover:rounded-full",
+          isToday && "!bg-brand/20 !text-white font-bold border-3 border-brand rounded-full",
           isDisabled && "opacity-50",
           "[&>span]:text-[10px] [&>span]:opacity-80 data-[selected-single=true]:[&>span]:opacity-100 data-[selected-single=true]:[&>span]:font-semibold",
-          defaultClassNames.day,
           className
         )}
         {...props}

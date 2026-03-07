@@ -175,11 +175,27 @@ router.put('/bookings/:id', async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 
+  // Emit real-time updates
+  io.emit('events:updated');
+  io.to(`club:${data.club_id}`).emit('booking:status_changed', {
+    bookingId: id,
+    status: data.status,
+    eventName: data.event_name,
+    clubId: data.club_id,
+  });
+
   return res.json(data);
 });
 
 router.delete('/bookings/:id', async (req, res) => {
   const { id } = req.params;
+
+  // Fetch the booking first so we can notify the club
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('club_id, event_name')
+    .eq('id', id)
+    .single();
 
   const { error } = await supabase
     .from('bookings')
@@ -188,6 +204,17 @@ router.delete('/bookings/:id', async (req, res) => {
 
   if (error) {
     return res.status(500).json({ error: error.message });
+  }
+
+  // Emit real-time deletion
+  io.emit('events:updated');
+  if (booking) {
+    io.to(`club:${booking.club_id}`).emit('booking:status_changed', {
+      bookingId: id,
+      status: 'deleted' as any,
+      eventName: booking.event_name,
+      clubId: booking.club_id,
+    });
   }
 
   return res.json({ success: true });
@@ -256,6 +283,15 @@ router.post('/bookings', async (req, res) => {
     title: 'Event Created by Admin',
     message: `"${event_name}" has been created and auto-approved.`,
     metadata: { batchId, venues: venue_ids },
+  });
+
+  // Emit real-time events
+  io.emit('events:updated');
+  io.to(`club:${club_id}`).emit('booking:status_changed', {
+    bookingId: createdBookings[0].id,
+    status: 'approved',
+    eventName: event_name,
+    clubId: club_id,
   });
 
   return res.status(201).json(createdBookings);

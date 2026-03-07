@@ -149,8 +149,8 @@ const MasterSchedule: React.FC = () => {
                         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">Master Schedule</h1>
                         <p className="text-textMuted text-sm sm:text-base mt-1">View all venue bookings across the campus.</p>
                     </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
-                        <div className="relative flex-1 sm:w-64">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
+                        <div className="relative flex-1 sm:w-64 min-w-[200px]">
                             <Search className="absolute left-3 top-2.5 h-4 w-4 text-textMuted pointer-events-none" />
                             <Input
                                 placeholder="Search events..."
@@ -159,47 +159,49 @@ const MasterSchedule: React.FC = () => {
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
-                        <div className="relative">
-                            <select
-                                value={selectedVenue}
-                                onChange={(e) => setSelectedVenue(e.target.value)}
-                                className="
-                                appearance-none rounded-xl
-                                px-3 pr-8 py-2 text-sm cursor-pointer
-                                bg-[var(--color-cardBg,#1e1e2e)] text-[var(--color-textPrimary,#e2e2e2)]
-                                border border-[var(--color-borderSoft,#2a2a3a)]
-                                focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand
-                                transition-all duration-200
-                                [&>option]:bg-[var(--color-cardBg,#1e1e2e)] [&>option]:text-[var(--color-textPrimary,#e2e2e2)]
-                            "
-                            >
-                                <option value="all">All Venues</option>
-                                {venueNames.map(name => (
-                                    <option key={name} value={name}>{name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" />
-                        </div>
-                        <div className="relative">
-                            <select
-                                value={selectedClub}
-                                onChange={(e) => setSelectedClub(e.target.value)}
-                                className="
-                                appearance-none rounded-xl
-                                px-3 pr-8 py-2 text-sm cursor-pointer
-                                bg-[var(--card)] text-[var(--textPrimary)]
-                                border border-[var(--borderSoft)]
-                                focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand
-                                transition-all duration-200
-                                [&>option]:bg-[var(--popover)] [&>option]:text-[var(--popover-foreground)]
-                            "
-                            >
-                                <option value="all">All Clubs</option>
-                                {clubNames.map(name => (
-                                    <option key={name} value={name}>{name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" />
+                        <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                            <div className="relative flex-1 sm:flex-none">
+                                <select
+                                    value={selectedVenue}
+                                    onChange={(e) => setSelectedVenue(e.target.value)}
+                                    className="
+                                    w-full appearance-none rounded-xl
+                                    px-3 pr-8 py-2 text-sm cursor-pointer
+                                    bg-[var(--card)] text-[var(--textPrimary)]
+                                    border border-[var(--borderSoft)]
+                                    focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand
+                                    transition-all duration-200
+                                    [&>option]:bg-[var(--popover)] [&>option]:text-[var(--popover-foreground)]
+                                "
+                                >
+                                    <option value="all">All Venues</option>
+                                    {venueNames.map(name => (
+                                        <option key={name} value={name}>{name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" />
+                            </div>
+                            <div className="relative flex-1 sm:flex-none">
+                                <select
+                                    value={selectedClub}
+                                    onChange={(e) => setSelectedClub(e.target.value)}
+                                    className="
+                                    w-full appearance-none rounded-xl
+                                    px-3 pr-8 py-2 text-sm cursor-pointer
+                                    bg-[var(--card)] text-[var(--textPrimary)]
+                                    border border-[var(--borderSoft)]
+                                    focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand
+                                    transition-all duration-200
+                                    [&>option]:bg-[var(--popover)] [&>option]:text-[var(--popover-foreground)]
+                                "
+                                >
+                                    <option value="all">All Clubs</option>
+                                    {clubNames.map(name => (
+                                        <option key={name} value={name}>{name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" />
+                            </div>
                         </div>
                     </div>
                 </div>

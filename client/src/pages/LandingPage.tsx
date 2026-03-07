@@ -226,7 +226,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1 }}
-                    className="text-5xl sm:text-6xl md:text-7xl lg:text-[5rem] font-extrabold tracking-tighter text-textPrimary leading-[1.05] pb-2"
+                    className="text-4xl sm:text-6xl md:text-7xl lg:text-[5rem] font-extrabold tracking-tighter text-textPrimary leading-[1.1] pb-2"
                 >
                     Discover What's
                     <br />
@@ -339,7 +339,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                                     <div
                                         key={day.toISOString()}
                                         className={`
-                      min-h-[100px] sm:min-h-[120px] p-1.5 sm:p-2 border-r border-b border-borderSoft/20 last:border-r-0 
+                      min-h-[80px] sm:min-h-[120px] p-1 sm:p-2 border-r border-b border-borderSoft/20 last:border-r-0 
                       transition-colors cursor-default relative group
                       ${isToday ? 'bg-brand/[0.04] dark:bg-brand/[0.08]' : ''}
                       ${!isCurrentMonth ? 'opacity-40' : ''}
@@ -370,13 +370,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                                                         key={event.id}
                                                         onClick={() => setSelectedEvent(event)}
                                                         className={`
-                              w-full text-left rounded-md px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs font-medium truncate
+                              w-full text-left rounded-md px-1 py-0.5 sm:px-2 sm:py-1 text-[9px] sm:text-xs font-medium truncate
                               border transition-all hover:scale-[1.02] hover:shadow-sm
                               ${c.bg} ${c.text} ${c.border}
                             `}
                                                         title={event.eventName}
                                                     >
-                                                        <span className="hidden sm:inline">{formatTime(event.startTime)} </span>
+                                                        <span className="hidden md:inline">{formatTime(event.startTime)} </span>
                                                         {event.eventName}
                                                     </button>
                                                 );

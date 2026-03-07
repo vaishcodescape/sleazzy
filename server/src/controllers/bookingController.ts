@@ -239,6 +239,18 @@ export const createBooking = async (req: Request, res: Response) => {
     });
   }
 
+  // Also emit for auto-approved bookings so they show up on the club's own dashboard and public calendar instantly
+  const approvedBookings = createdBookings.filter((b) => b.status === 'approved');
+  if (approvedBookings.length > 0) {
+    io.to(`club:${clubId}`).emit('booking:status_changed', {
+      bookingId: approvedBookings[0].id,
+      status: 'approved',
+      eventName,
+      clubId,
+    });
+    io.emit('events:updated');
+  }
+
   return res.status(201).json(createdBookings);
 };
 

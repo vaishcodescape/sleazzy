@@ -46,16 +46,27 @@ const MyBookings: React.FC = () => {
   // Real-time: refresh when the admin approves or rejects any of this club's bookings
   React.useEffect(() => {
     const socket = getSocket();
-    const handleStatusChanged = (payload: { eventName: string; status: 'approved' | 'rejected' }) => {
+    const handleStatusChanged = (payload: { eventName: string; status: 'approved' | 'rejected' | 'deleted' }) => {
       if (payload.status === 'approved') {
         toast.success(`"${payload.eventName}" approved!`, { description: 'Status updated on this page.' });
-      } else {
+      } else if (payload.status === 'rejected') {
         toast.warning(`"${payload.eventName}" was not approved`, { description: 'Status updated on this page.' });
+      } else if (payload.status === 'deleted') {
+        toast.info(`"${payload.eventName}" has been removed`, { description: 'Status updated on this page.' });
       }
       fetchBookings();
     };
+
+    const handleEventsUpdated = () => {
+      fetchBookings();
+    };
+
     socket.on('booking:status_changed', handleStatusChanged);
-    return () => { socket.off('booking:status_changed', handleStatusChanged); };
+    socket.on('events:updated', handleEventsUpdated);
+    return () => {
+      socket.off('booking:status_changed', handleStatusChanged);
+      socket.off('events:updated', handleEventsUpdated);
+    };
   }, [fetchBookings]);
 
   const getVenueName = (id: string) => venues.find(v => v.id === id)?.name || id;
