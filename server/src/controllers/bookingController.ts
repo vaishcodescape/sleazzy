@@ -4,6 +4,7 @@ import { sendApprovalNotification } from '../services/email';
 import { createBookingPendingNotifications } from '../services/notification';
 import { getSemesterRange, countCoCurricularBookings, CO_CURRICULAR_LIMIT } from '../services/semesterUtils';
 import { randomUUID } from 'crypto';
+import { io } from '../server';
 
 type EventType = 'co_curricular' | 'open_all' | 'closed_club';
 
@@ -224,6 +225,18 @@ export const createBooking = async (req: Request, res: Response) => {
 
     // Also persist as in-app notifications
     await createBookingPendingNotifications(itemsForNotification);
+  }
+
+  // Emit real-time event so admin sees the new booking immediately
+  const pendingBookings = createdBookings.filter((b) => b.status === 'pending');
+  if (pendingBookings.length > 0) {
+    io.to('admin').emit('booking:new', {
+      eventName,
+      clubName: club.name,
+      venueNames: venues.map(v => v.name).join(', '),
+      batchId,
+      clubId,
+    });
   }
 
   return res.status(201).json(createdBookings);

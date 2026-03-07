@@ -12,6 +12,8 @@ import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Calendar, type CalendarEvent } from '../components/ui/calendar';
 import { Skeleton } from '../components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { getSocket } from './socket';
+import { toast } from 'sonner';
 
 import { User } from '../types';
 
@@ -56,6 +58,30 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
     fetchEvents();
   }, [fetchEvents]);
 
+  // Socket.io: join the club's own room and listen for booking status changes
+  React.useEffect(() => {
+    // We use the user's email to associate with the right club room
+    // The server emits to `club:${data.club_id}`, so we need the club id
+    // We'll figure it out once events load by checking myEvents[0]?.clubId
+    const socket = getSocket();
+
+    const handleStatusChanged = (payload: { eventName: string; status: 'approved' | 'rejected'; clubId: string }) => {
+      if (payload.status === 'approved') {
+        toast.success(`"${payload.eventName}" has been approved!`, {
+          description: 'Your booking is now confirmed.',
+        });
+      } else {
+        toast.warning(`"${payload.eventName}" was not approved`, {
+          description: 'The admin has reviewed and declined this booking.',
+        });
+      }
+      fetchEvents(); // refresh to show updated status
+    };
+
+    socket.on('booking:status_changed', handleStatusChanged);
+    return () => { socket.off('booking:status_changed', handleStatusChanged); };
+  }, [fetchEvents]);
+
   const getVenueName = (id: string) => venues.find(v => v.id === id)?.name || id;
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -67,37 +93,45 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
   };
 
   const getEventsForDate = (date: Date) => {
-    return allEvents.filter(e => {
+    return myEvents.filter(e => {
       const eDate = new Date(e.date);
       return isSameDay(eDate, date);
     });
   };
 
-  // Get dates that have events for calendar highlighting
-  const eventDates = allEvents.map(e => new Date(e.date));
+  // Normalize to local midnight so DayPicker's modifier date-matching works correctly
+  const eventDates = React.useMemo(() =>
+    myEvents.map(e => {
+      const d = new Date(e.date);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }),
+    [myEvents]
+  );
 
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
 
+  // Show club's own bookings on the calendar (includes pending, approved, rejected)
   const calendarEventsWithVenue: CalendarEvent[] = React.useMemo(() =>
-    allEvents.map(e => ({
+    myEvents.map(e => ({
       eventName: e.eventName,
       clubName: e.clubName,
       date: e.date,
       startTime: e.startTime,
       endTime: e.endTime,
       venueName: getVenueName(e.venueId),
+      status: e.status,
     })),
-    [allEvents, venues]
+    [myEvents, venues]
   );
 
   const upcomingEvents = React.useMemo(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    return allEvents
+    return myEvents
       .filter(e => new Date(e.date) >= now)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(0, 6);
-  }, [allEvents]);
+  }, [myEvents]);
 
   if (error) {
     return (
@@ -140,7 +174,7 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
@@ -190,11 +224,9 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
                     selected={selectedDate}
                     onSelect={setSelectedDate}
                     events={calendarEventsWithVenue}
-                    modifiers={{
-                      hasEvents: eventDates
-                    }}
+                    modifiers={{ hasEvents: eventDates }}
                     modifierClassNames={{
-                      hasEvents: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-brand"
+                      hasEvents: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary"
                     }}
                     className="rounded-2xl"
                   />

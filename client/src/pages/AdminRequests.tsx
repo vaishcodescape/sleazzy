@@ -13,6 +13,8 @@ import { Badge } from '../components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Skeleton } from '../components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { getSocket } from '../lib/socket';
+import { toast } from 'sonner';
 
 const AdminRequests: React.FC = () => {
   const [requests, setRequests] = useState<GroupedBooking[]>([]);
@@ -43,6 +45,23 @@ const AdminRequests: React.FC = () => {
 
   React.useEffect(() => {
     fetchRequests();
+  }, [fetchRequests]);
+
+  // Socket.io: join admin room for real-time new booking alerts
+  React.useEffect(() => {
+    const socket = getSocket();
+    socket.emit('join:admin');
+
+    const handleBookingNew = (payload: { eventName: string; clubName: string; venueNames: string }) => {
+      toast.message('📋 New Booking Request', {
+        description: `${payload.clubName} → "${payload.eventName}" at ${payload.venueNames}`,
+        action: { label: 'Refresh', onClick: fetchRequests },
+      });
+      fetchRequests();
+    };
+
+    socket.on('booking:new', handleBookingNew);
+    return () => { socket.off('booking:new', handleBookingNew); };
   }, [fetchRequests]);
 
   const handleAction = async (ids: string[], action: 'approved' | 'rejected') => {

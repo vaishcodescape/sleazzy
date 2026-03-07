@@ -11,6 +11,8 @@ import { Badge } from '../components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Skeleton } from '../components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { getSocket } from '../lib/socket';
+import { toast } from 'sonner';
 
 const MyBookings: React.FC = () => {
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
@@ -39,6 +41,21 @@ const MyBookings: React.FC = () => {
 
   React.useEffect(() => {
     fetchBookings();
+  }, [fetchBookings]);
+
+  // Real-time: refresh when the admin approves or rejects any of this club's bookings
+  React.useEffect(() => {
+    const socket = getSocket();
+    const handleStatusChanged = (payload: { eventName: string; status: 'approved' | 'rejected' }) => {
+      if (payload.status === 'approved') {
+        toast.success(`"${payload.eventName}" approved!`, { description: 'Status updated on this page.' });
+      } else {
+        toast.warning(`"${payload.eventName}" was not approved`, { description: 'Status updated on this page.' });
+      }
+      fetchBookings();
+    };
+    socket.on('booking:status_changed', handleStatusChanged);
+    return () => { socket.off('booking:status_changed', handleStatusChanged); };
   }, [fetchBookings]);
 
   const getVenueName = (id: string) => venues.find(v => v.id === id)?.name || id;

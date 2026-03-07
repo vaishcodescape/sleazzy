@@ -48,8 +48,8 @@ router.get('/public-bookings', async (_req, res) => {
     .from('bookings')
     .select('*, clubs(name), venues(name)')
     .eq('status', 'approved')
-    .eq('is_public', true)
-    .gte('end_time', new Date().toISOString());
+    .gte('end_time', new Date().toISOString())
+    .order('start_time', { ascending: true });
 
   if (error) {
     return res.status(500).json({ error: error.message });
