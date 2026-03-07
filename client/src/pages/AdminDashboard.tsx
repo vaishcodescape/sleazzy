@@ -14,6 +14,8 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Calendar, type CalendarEvent } from '../components/ui/calendar';
 import AddBookingDialog from '../components/AddBookingDialog';
 import { groupBookings } from '../lib/api';
+import { getSocket } from '../lib/socket';
+import { toast } from 'sonner';
 
 const AdminDashboard: React.FC = () => {
   const [pendingRequests, setPendingRequests] = React.useState<GroupedBooking[]>([]);
@@ -91,6 +93,22 @@ const AdminDashboard: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
+  // Socket.io: join admin room and listen for new booking requests
+  React.useEffect(() => {
+    const socket = getSocket();
+    socket.emit('join:admin');
+
+    const handleBookingNew = (payload: { eventName: string; clubName: string; venueNames: string }) => {
+      toast.message('New Booking Request', {
+        description: `${payload.clubName} requested "${payload.eventName}" at ${payload.venueNames}`,
+      });
+      fetchData(); // refresh the dashboard
+    };
+
+    socket.on('booking:new', handleBookingNew);
+    return () => { socket.off('booking:new', handleBookingNew); };
+  }, [fetchData]);
+
   const handleAction = async (bookingIds: string[], status: 'approved' | 'rejected') => {
     try {
       await Promise.all(bookingIds.map(id => apiRequest(`/api/admin/bookings/${id}/status`, {
@@ -119,11 +137,16 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
-  const eventDates = calendarEvents
-    .filter(e => e.status === 'approved')
-    .map(e => new Date(e.date));
-
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
+
+  // Normalize to local midnight so DayPicker's modifier matching works
+  const eventDates = React.useMemo(() =>
+    calendarEvents.map(e => {
+      const d = new Date(e.date);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }),
+    [calendarEvents]
+  );
 
   const calendarEventsWithVenue: CalendarEvent[] = React.useMemo(() =>
     calendarEvents.map(e => ({
@@ -322,11 +345,9 @@ const AdminDashboard: React.FC = () => {
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   events={calendarEventsWithVenue}
-                  modifiers={{
-                    hasEvents: eventDates
-                  }}
+                  modifiers={{ hasEvents: eventDates }}
                   modifierClassNames={{
-                    hasEvents: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-brand"
+                    hasEvents: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary"
                   }}
                   className="rounded-2xl"
                 />

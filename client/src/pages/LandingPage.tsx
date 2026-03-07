@@ -12,6 +12,7 @@ import {
     X,
 } from 'lucide-react';
 import { apiRequest, type ApiBooking } from '../lib/api';
+import { getSocket } from '../lib/socket';
 
 import { ThemeToggle } from '../components/theme-toggle';
 import { Button } from '../components/ui/button';
@@ -87,41 +88,49 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
     const [selectedDayEvents, setSelectedDayEvents] = useState<PublicEvent[] | null>(null);
 
     // Fetch public bookings
-    useEffect(() => {
-        const fetchEvents = async () => {
-            try {
-                setLoading(true);
-                const bookings = await apiRequest<ApiBooking[]>('/api/public-bookings');
+    const fetchEvents = useCallback(async () => {
+        try {
+            setLoading(true);
+            const bookings = await apiRequest<ApiBooking[]>('/api/public-bookings');
 
-                // Deduplicate by batchId (multi-venue events)
-                const seen = new Set<string>();
-                const parsed: PublicEvent[] = [];
+            // Deduplicate by batchId (multi-venue events)
+            const seen = new Set<string>();
+            const parsed: PublicEvent[] = [];
 
-                for (const b of bookings) {
-                    if (b.batch_id && seen.has(b.batch_id)) continue;
-                    if (b.batch_id) seen.add(b.batch_id);
+            for (const b of bookings) {
+                if (b.batch_id && seen.has(b.batch_id)) continue;
+                if (b.batch_id) seen.add(b.batch_id);
 
-                    parsed.push({
-                        id: b.id,
-                        eventName: b.event_name,
-                        clubName: b.clubs?.name || 'Unknown Club',
-                        venueName: b.venues?.name || 'TBD',
-                        startTime: new Date(b.start_time),
-                        endTime: new Date(b.end_time),
-                        eventType: b.event_type,
-                        batchId: b.batch_id,
-                    });
-                }
-
-                setEvents(parsed);
-            } catch (err) {
-                console.error('Failed to fetch public events:', err);
-            } finally {
-                setLoading(false);
+                parsed.push({
+                    id: b.id,
+                    eventName: b.event_name,
+                    clubName: b.clubs?.name || 'Unknown Club',
+                    venueName: b.venues?.name || 'TBD',
+                    startTime: new Date(b.start_time),
+                    endTime: new Date(b.end_time),
+                    eventType: b.event_type,
+                    batchId: b.batch_id,
+                });
             }
-        };
-        fetchEvents();
+
+            setEvents(parsed);
+        } catch (err) {
+            console.error('Failed to fetch public events:', err);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchEvents();
+    }, [fetchEvents]);
+
+    // Real-time: refresh when admin approves a booking (makes it public)
+    useEffect(() => {
+        const socket = getSocket();
+        socket.on('events:updated', fetchEvents);
+        return () => { socket.off('events:updated', fetchEvents); };
+    }, [fetchEvents]);
 
     // Build calendar grid
     const calendarDays = useMemo(() => {

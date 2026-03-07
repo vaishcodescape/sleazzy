@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import authMiddleware from '../middleware/auth';
 import { createNotification } from '../services/notification';
 import { getSemesterRange, countCoCurricularBookings, CO_CURRICULAR_LIMIT } from '../services/semesterUtils';
+import { io } from '../server';
 
 const router = express.Router();
 
@@ -71,6 +72,19 @@ router.patch('/bookings/:id/status', async (req, res) => {
     message: `"${data.event_name}" has been ${status}.`,
     metadata: { bookingId: id, status },
   });
+
+  // Emit real-time event to the specific club room
+  io.to(`club:${data.club_id}`).emit('booking:status_changed', {
+    bookingId: id,
+    status,
+    eventName: data.event_name,
+    clubId: data.club_id,
+  });
+
+  // Broadcast to all clients when approved so the public landing page calendar refreshes
+  if (status === 'approved') {
+    io.emit('events:updated');
+  }
 
   return res.json(data);
 });

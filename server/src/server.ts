@@ -5,6 +5,8 @@ import path from 'path';
 import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 
 import bookingsRoutes from './routes/bookings';
 import adminRoutes from './routes/admin';
@@ -13,8 +15,38 @@ import authRoutes from './routes/auth';
 import { supabase } from './supabaseClient';
 
 const app = express();
+const httpServer = createServer(app);
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(s => s.trim());
+
+export const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+  },
+});
+
+io.on('connection', (socket) => {
+  console.log(`[Socket.io] Client connected: ${socket.id}`);
+
+  // Allow clubs to join their own room so they receive targeted notifications
+  socket.on('join:club', (clubId: string) => {
+    socket.join(`club:${clubId}`);
+    console.log(`[Socket.io] Socket ${socket.id} joined room: club:${clubId}`);
+  });
+
+  // Allow admins to join the admin room
+  socket.on('join:admin', () => {
+    socket.join('admin');
+    console.log(`[Socket.io] Socket ${socket.id} joined room: admin`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`[Socket.io] Client disconnected: ${socket.id}`);
+  });
+});
+
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json({ limit: '5mb' }));
 
 // Narrow body-parser style errors that use `type` and `message` fields
@@ -22,7 +54,7 @@ function isBodyParserError(err: unknown): err is { type: string; message?: strin
   return typeof err === 'object' && err !== null && 'type' in err;
 }
 
-// Catch body-parser errors (e.g., malformed JSON, encoding issues from Caddy proxy)
+// Catch body-parser errors (e.g., malformed JSON)
 const bodyParserErrorHandler: express.ErrorRequestHandler = (err, req, res, next) => {
   if (err instanceof SyntaxError && 'body' in (err as { body?: unknown })) {
     console.error('JSON Parse Error:', err.message);
@@ -39,16 +71,15 @@ const bodyParserErrorHandler: express.ErrorRequestHandler = (err, req, res, next
 
     let status = 400;
     if (err.type === 'entity.too.large' || err.type === 'request.size.invalid') {
-      status = 413; // Payload Too Large
+      status = 413;
     } else if (err.type === 'encoding.unsupported') {
-      status = 415; // Unsupported Media Type
+      status = 415;
     }
 
     const responseBody: { error: string; details?: string; type?: string } = {
       error: 'Failed to process request body',
     };
 
-    // Only include detailed error information in non-production environments
     if (process.env.NODE_ENV !== 'production') {
       responseBody.details = err.message;
       responseBody.type = err.type;
@@ -86,6 +117,6 @@ if (fs.existsSync(clientDir)) {
 }
 
 const port = process.env.PORT || 4000;
-app.listen(port, () => {
+httpServer.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
