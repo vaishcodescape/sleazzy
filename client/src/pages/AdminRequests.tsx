@@ -61,8 +61,19 @@ const AdminRequests: React.FC = () => {
       fetchRequests();
     };
 
+    const handleEventsUpdated = () => {
+      fetchRequests();
+    };
+
     socket.on('booking:new', handleBookingNew);
-    return () => { socket.off('booking:new', handleBookingNew); };
+    socket.on('events:updated', handleEventsUpdated);
+    socket.on('booking:status_changed', handleEventsUpdated);
+
+    return () => {
+      socket.off('booking:new', handleBookingNew);
+      socket.off('events:updated', handleEventsUpdated);
+      socket.off('booking:status_changed', handleEventsUpdated);
+    };
   }, [fetchRequests]);
 
   const handleAction = async (ids: string[], action: 'approved' | 'rejected') => {
@@ -85,8 +96,8 @@ const AdminRequests: React.FC = () => {
 
   const filteredRequests = requests.filter(req => {
     const matchesTab = activeTab === 'pending'
-      ? req.status === 'pending'
-      : req.status !== 'pending';
+      ? (req.status === 'pending' || (req.status === 'partial' && req.bookings.some(b => b.status === 'pending')))
+      : (req.status !== 'pending' && !(req.status === 'partial' && req.bookings.some(b => b.status === 'pending')));
 
     const matchesSearch =
       req.clubName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -136,10 +147,10 @@ const AdminRequests: React.FC = () => {
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pending' | 'history')} className="w-full">
         <TabsList className="grid w-full grid-cols-2 bg-hoverSoft border-borderSoft rounded-xl p-1">
           <TabsTrigger value="pending" className="data-[state=active]:bg-background">
-            Pending Review ({requests.filter(r => r.status === 'pending').length})
+            Pending Review ({requests.reduce((acc, req) => acc + req.bookings.filter(b => b.status === 'pending').length, 0)})
           </TabsTrigger>
           <TabsTrigger value="history" className="data-[state=active]:bg-background">
-            History
+            History ({requests.filter(req => req.status !== 'pending' && !req.bookings.some(b => b.status === 'pending')).length})
           </TabsTrigger>
         </TabsList>
 
@@ -265,12 +276,12 @@ const AdminRequestRow: React.FC<AdminRequestRowProps> = ({ req, index, venues, h
           </Badge>
         </td>
         <td className="px-4 sm:px-6 py-4 text-right">
-          {req.status === 'pending' || req.status === 'partial' ? (
+          {req.bookings.every(b => b.status === "pending") ? (
             <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleAction(req.ids, 'rejected')}
+                onClick={(e) => { e.stopPropagation(); handleAction(req.ids, 'rejected'); }}
                 className="text-textMuted hover:text-error"
                 title="Reject All"
               >
@@ -279,15 +290,20 @@ const AdminRequestRow: React.FC<AdminRequestRowProps> = ({ req, index, venues, h
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleAction(req.ids, 'approved')}
+                onClick={(e) => { e.stopPropagation(); handleAction(req.ids, 'approved'); }}
                 className="text-primary hover:text-primary/80"
                 title="Approve All"
               >
                 <CheckCircle size={18} />
               </Button>
             </div>
+          ) : req.bookings.some(b => b.status === "pending") ? (
+            <div className="text-xs font-semibold text-warning flex items-center justify-end gap-1">
+              Mixed Status
+              <ChevronDown size={14} className={cn("transition-transform", isExpanded && "rotate-180")} />
+            </div>
           ) : (
-            <div className="text-xs text-textMuted italic">
+            <div className="text-xs text-textMuted italic flex justify-end">
               Processed
             </div>
           )}

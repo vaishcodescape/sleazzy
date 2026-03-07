@@ -104,8 +104,8 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api', bookingsRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/admin/notifications', notificationRoutes);
 
 // Serve frontend static files (when client dist is present, e.g. in Docker)
 const clientDir = process.env.CLIENT_DIST_DIR || path.join(__dirname, '../../client');

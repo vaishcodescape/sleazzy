@@ -155,7 +155,7 @@ export const createBooking = async (req: Request, res: Response) => {
   }
 
   const createdBookings = [];
-  const batchId = randomUUID();
+  const batchId = (req.body as any).batchId || randomUUID();
 
   for (const venue of venues) {
     let status: 'approved' | 'pending' = 'pending';
@@ -284,6 +284,37 @@ export const checkConflict = async (req: Request, res: Response) => {
 
     return res.json({ hasConflict: false, message: '' });
   } catch (err) {
+    return res.status(500).json({ error: (err as Error).message });
+  }
+};
+export const getBusyVenues = async (req: Request, res: Response) => {
+  const startTime = req.query.startTime as string;
+  const endTime = req.query.endTime as string;
+
+  console.log('[getBusyVenues] Request:', { startTime, endTime });
+
+  if (!startTime || !endTime) {
+    return res.status(400).json({ error: 'startTime and endTime are required' });
+  }
+
+  try {
+    const { data: conflicts, error } = await supabase
+      .from('bookings')
+      .select('venue_id')
+      .neq('status', 'rejected')
+      .lt('start_time', endTime)
+      .gt('end_time', startTime);
+
+    if (error) {
+      console.error('[getBusyVenues] Supabase Error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    const busyVenueIds = [...new Set((conflicts || []).map((c: any) => c.venue_id))];
+    console.log('[getBusyVenues] Results:', busyVenueIds);
+    return res.json(busyVenueIds);
+  } catch (err) {
+    console.error('[getBusyVenues] Unexpected Error:', err);
     return res.status(500).json({ error: (err as Error).message });
   }
 };

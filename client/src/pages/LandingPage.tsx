@@ -173,6 +173,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         fetchEvents();
     }, [fetchEvents]);
 
+    useEffect(() => {
+        const socket = getSocket();
+
+        const handleRefresh = () => {
+            fetchEvents();
+        };
+
+        socket.on('events:updated', handleRefresh);
+        socket.on('booking:status_changed', handleRefresh);
+        socket.on('booking:new', handleRefresh);
+
+        return () => {
+            socket.off('events:updated', handleRefresh);
+            socket.off('booking:status_changed', handleRefresh);
+            socket.off('booking:new', handleRefresh);
+        };
+    }, [fetchEvents]);
+
     // Real-time: refresh when admin approves a booking (makes it public)
     useEffect(() => {
         const socket = getSocket();

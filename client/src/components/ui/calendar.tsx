@@ -140,7 +140,7 @@ function Calendar({
               defaultClassNames.week_number
             ),
             day: cn(
-              "group/day relative select-none p-0 text-center bg-transparent border-none hover:bg-transparent",
+              "group/day relative select-none p-0 text-center bg-transparent border border-borderSoft/20 hover:bg-transparent first:border-l-0 last:border-r-0",
               defaultClassNames.day
             ),
             range_start: cn(
@@ -280,7 +280,8 @@ function CalendarDayButton({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2 focus-visible:z-10",
           !isSelected && !isRangeStart && !isRangeEnd && !isDisabled && "hover:bg-hoverSoft hover:rounded-full hover:text-textPrimary",
           hasEvents && !isSelected && !isDisabled && "ring-1 ring-brand/20 hover:ring-brand/40 hover:rounded-full",
-          isToday && "!bg-brand/20 !text-white font-bold border-3 border-brand rounded-full",
+          isToday && !isSelected && "bg-brand/10 text-brand font-bold border-2 border-brand/50 rounded-full",
+          isToday && isSelected && "bg-brand text-white font-bold rounded-full",
           isDisabled && "opacity-50",
           "[&>span]:text-[10px] [&>span]:opacity-80 data-[selected-single=true]:[&>span]:opacity-100 data-[selected-single=true]:[&>span]:font-semibold",
           className
@@ -323,6 +324,7 @@ function EventHoverCard({
     const el = containerRef.current
     if (!el) return
 
+// sourcery skip: avoid-function-declarations-in-blocks
     function onMove(e: PointerEvent) {
       const hit = (e.target as HTMLElement).closest("[data-date-key]") as HTMLElement | null
 

@@ -110,9 +110,12 @@ const AdminDashboard: React.FC = () => {
 
     socket.on('booking:new', handleBookingNew);
     socket.on('events:updated', handleEventsUpdated);
+    socket.on('booking:status_changed', handleEventsUpdated);
+
     return () => {
       socket.off('booking:new', handleBookingNew);
       socket.off('events:updated', handleEventsUpdated);
+      socket.off('booking:status_changed', handleEventsUpdated);
     };
   }, [fetchData]);
 

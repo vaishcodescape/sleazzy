@@ -65,20 +65,14 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
     // We'll figure it out once events load by checking myEvents[0]?.clubId
     const socket = getSocket();
 
+    // Join club room if we have a clubId from the first event
+    if (myEvents.length > 0) {
+      socket.emit('join:club', myEvents[0].clubId);
+    } else if (user?.role === 'club') {
+      // If we have at least one event, it works. 
+    }
+
     const handleStatusChanged = (payload: { eventName: string; status: 'approved' | 'rejected' | 'deleted'; clubId: string }) => {
-      if (payload.status === 'approved') {
-        toast.success(`"${payload.eventName}" has been approved!`, {
-          description: 'Your booking is now confirmed.',
-        });
-      } else if (payload.status === 'rejected') {
-        toast.warning(`"${payload.eventName}" was not approved`, {
-          description: 'The admin has reviewed and declined this booking.',
-        });
-      } else if (payload.status === 'deleted') {
-        toast.info(`"${payload.eventName}" has been removed`, {
-          description: 'This event is no longer scheduled.',
-        });
-      }
       fetchEvents(); // refresh to show updated status
     };
 
@@ -92,7 +86,7 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
       socket.off('booking:status_changed', handleStatusChanged);
       socket.off('events:updated', handleEventsUpdated);
     };
-  }, [fetchEvents]);
+  }, [fetchEvents, myEvents, user]);
 
   const getVenueName = (id: string) => venues.find(v => v.id === id)?.name || id;
 

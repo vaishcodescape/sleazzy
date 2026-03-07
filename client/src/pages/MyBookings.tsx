@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, MapPin, Upload, FileText, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, MapPin, Upload, FileText, AlertTriangle, RefreshCw, Plus } from 'lucide-react';
 import { apiRequest, mapBooking, groupBookings, type ApiBooking, type ApiVenue } from '../lib/api';
 import { toastInfo, toastError } from '../lib/toast';
 import { getErrorMessage } from '../lib/errors';
-import { Booking } from '../types';
+import { Booking, GroupedBooking } from '../types';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -12,13 +12,17 @@ import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Skeleton } from '../components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { getSocket } from '../lib/socket';
-import { toast } from 'sonner';
+import ExtraRoomDialog from '../components/ExtraRoomDialog';
 
 const MyBookings: React.FC = () => {
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [venues, setVenues] = useState<ApiVenue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Extra Room Dialog State
+  const [isExtraRoomOpen, setIsExtraRoomOpen] = useState(false);
+  const [selectedBookingForExtra, setSelectedBookingForExtra] = useState<GroupedBooking | null>(null);
 
   const fetchBookings = React.useCallback(async () => {
     setIsLoading(true);
@@ -43,31 +47,25 @@ const MyBookings: React.FC = () => {
     fetchBookings();
   }, [fetchBookings]);
 
-  // Real-time: refresh when the admin approves or rejects any of this club's bookings
+  // Real-time updates
   React.useEffect(() => {
     const socket = getSocket();
-    const handleStatusChanged = (payload: { eventName: string; status: 'approved' | 'rejected' | 'deleted' }) => {
-      if (payload.status === 'approved') {
-        toast.success(`"${payload.eventName}" approved!`, { description: 'Status updated on this page.' });
-      } else if (payload.status === 'rejected') {
-        toast.warning(`"${payload.eventName}" was not approved`, { description: 'Status updated on this page.' });
-      } else if (payload.status === 'deleted') {
-        toast.info(`"${payload.eventName}" has been removed`, { description: 'Status updated on this page.' });
-      }
-      fetchBookings();
-    };
 
-    const handleEventsUpdated = () => {
-      fetchBookings();
-    };
+    if (myBookings.length > 0) {
+      socket.emit('join:club', myBookings[0].clubId);
+    }
+
+    const handleStatusChanged = () => fetchBookings();
+    const handleEventsUpdated = () => fetchBookings();
 
     socket.on('booking:status_changed', handleStatusChanged);
     socket.on('events:updated', handleEventsUpdated);
+
     return () => {
       socket.off('booking:status_changed', handleStatusChanged);
       socket.off('events:updated', handleEventsUpdated);
     };
-  }, [fetchBookings]);
+  }, [fetchBookings, myBookings]);
 
   const getVenueName = (id: string) => venues.find(v => v.id === id)?.name || id;
 
@@ -81,19 +79,13 @@ const MyBookings: React.FC = () => {
     return eventDate < today;
   };
 
-  const handleFileUpload = async (id: string, type: 'report' | 'indent') => {
-    // TODO: Replace with actual file upload API call
-    try {
-      // const formData = new FormData();
-      // formData.append('file', file);
-      // formData.append('bookingId', id);
-      // formData.append('type', type);
-      // await fetch('/api/bookings/upload', { method: 'POST', body: formData });
-      toastInfo(`File upload for ${type === 'report' ? 'event report' : 'indent'} will be available soon.`);
-    } catch (error) {
-      console.error('Failed to upload file:', error);
-      toastError(error, 'Failed to upload file.');
-    }
+  const handleFileUpload = (id: string, type: 'report' | 'indent') => {
+    toastInfo(`File upload for ${type === 'report' ? 'event report' : 'indent'} will be available soon.`);
+  };
+
+  const openExtraRoomDialog = (booking: GroupedBooking) => {
+    setSelectedBookingForExtra(booking);
+    setIsExtraRoomOpen(true);
   };
 
   return (
@@ -103,17 +95,10 @@ const MyBookings: React.FC = () => {
       transition={{ duration: 0.4 }}
       className="space-y-8 px-4"
     >
-      {/* Enhanced Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="min-w-0">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <h2 className="text-4xl sm:text-5xl lg:text-5xl font-extrabold text-textPrimary tracking-tighter">My Bookings</h2>
-            <p className="text-textSecondary mt-3 text-base sm:text-lg font-medium leading-relaxed">Track your venue reservations, manage schedules, and submit post-event documentation.</p>
-          </motion.div>
+          <motion.h2 className="text-4xl sm:text-5xl lg:text-5xl font-extrabold text-textPrimary tracking-tighter">My Bookings</motion.h2>
+          <p className="text-textSecondary mt-3 text-base sm:text-lg font-medium leading-relaxed">Track your venue reservations, manage schedules, and submit post-event documentation.</p>
         </div>
       </div>
 
@@ -123,8 +108,7 @@ const MyBookings: React.FC = () => {
           <AlertTitle className="font-bold text-error">Could not load bookings</AlertTitle>
           <AlertDescription className="mt-2 text-error/80">{error}</AlertDescription>
           <Button variant="outline" size="sm" className="mt-4 gap-2 border-error/30 hover:bg-error/5" onClick={fetchBookings}>
-            <RefreshCw size={16} />
-            Retry
+            <RefreshCw size={16} /> Retry
           </Button>
         </Alert>
       )}
@@ -141,12 +125,14 @@ const MyBookings: React.FC = () => {
         <Card className="border-2 border-dashed border-borderSoft rounded-lg p-16 text-center bg-card shadow-none">
           <Calendar className="h-16 w-16 mx-auto text-textMuted/40 mb-4" />
           <p className="text-textMuted text-lg font-semibold">No bookings found yet.</p>
-          <p className="text-textMuted/70 mt-2">Start by booking a venue to see your reservations here.</p>
         </Card>
       ) : (
-        <div className="grid gap-6">
+        <div className="grid gap-6 pb-12">
           {groupedBookings.map((booking, index) => {
             const isPast = isPastEvent(booking.date);
+            const approvedVenues = booking.bookings.filter(b => b.status === 'approved');
+            const rejectedVenues = booking.bookings.filter(b => b.status === 'rejected');
+            const pendingVenues = booking.bookings.filter(b => b.status === 'pending');
 
             return (
               <motion.div
@@ -155,142 +141,91 @@ const MyBookings: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.08 }}
               >
-                <Card
-                  className={cn(
-                    "border rounded-lg overflow-hidden bg-card hover:shadow-md transition-all duration-300",
-                    isPast
-                      ? "border-borderSoft/50 opacity-75"
-                      : "border-borderSoft hover:border-brand/50"
-                  )}
-                >
+                <Card className={cn("border rounded-lg overflow-hidden bg-card hover:shadow-md transition-all duration-300", isPast ? "border-borderSoft/50 opacity-75" : "border-borderSoft hover:border-brand/50")}>
                   <CardContent className="p-6 sm:p-8">
                     <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-                      {/* Enhanced Date Box */}
-                      <div className={cn(
-                        "w-full md:w-28 h-28 rounded-lg flex flex-col items-center justify-center shrink-0 border border-borderSoft",
-                        isPast
-                          ? 'bg-hoverSoft/40 text-textMuted'
-                          : 'bg-card text-brand'
-                      )}>
-                        <span className="text-xs font-bold uppercase tracking-wider">
-                          {new Date(booking.date).toLocaleDateString('en-US', { month: 'short' })}
-                        </span>
-                        <span className="text-3xl font-extrabold leading-none">
-                          {new Date(booking.date).getDate()}
-                        </span>
+                      <div className={cn("w-full md:w-28 h-28 rounded-lg flex flex-col items-center justify-center shrink-0 border border-borderSoft", isPast ? 'bg-hoverSoft/40 text-textMuted' : 'bg-card text-brand')}>
+                        <span className="text-xs font-bold uppercase tracking-wider">{new Date(booking.date).toLocaleDateString('en-US', { month: 'short' })}</span>
+                        <span className="text-3xl font-extrabold leading-none">{new Date(booking.date).getDate()}</span>
                         <span className="text-xs mt-1 opacity-80">{new Date(booking.date).getFullYear()}</span>
                       </div>
 
-                      {/* Enhanced Details */}
                       <div className="flex-1">
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                           <div className="flex-1">
-                            <h3 className={cn(
-                              "text-2xl font-bold mb-3",
-                              isPast ? 'text-textMuted' : 'text-textPrimary'
-                            )}>
-                              {booking.eventName}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-4 text-sm">
-                              <span className={cn(
-                                "flex items-center gap-2 font-medium",
-                                isPast ? "text-textMuted/60" : "text-textSecondary"
-                              )}>
-                                <Clock size={18} className="shrink-0" />
-                                <span>{booking.startTime} – {booking.endTime}</span>
-                              </span>
-                              <span className={cn(
-                                "flex items-center gap-2 font-medium",
-                                isPast ? "text-textMuted/60" : "text-textSecondary"
-                              )}>
-                                <MapPin size={18} className="shrink-0 text-brand" />
-                                <span>{booking.venueName || booking.venueIds.map(getVenueName).join(', ')}</span>
-                              </span>
+                            <h3 className={cn("text-2xl font-bold mb-3", isPast ? 'text-textMuted' : 'text-textPrimary')}>{booking.eventName}</h3>
+                            <div className="flex items-center gap-2 text-sm mb-4 font-medium text-textSecondary">
+                              <Clock size={16} className="text-brand" />
+                              <span>{booking.startTime} – {booking.endTime}</span>
+                            </div>
+
+                            <div className="space-y-3 mt-4">
+                              {approvedVenues.length > 0 && (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-success uppercase tracking-widest block">Approved Locations</span>
+                                  <div className="flex flex-wrap gap-2">
+                                    {approvedVenues.map(v => (
+                                      <Badge key={v.id} variant="success" className="bg-success/5 text-success border-success/20 py-1 px-2.5 rounded-lg flex items-center gap-1.5 shadow-sm">
+                                        <MapPin size={12} /> {getVenueName(v.venueId)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {rejectedVenues.length > 0 && (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-error uppercase tracking-widest block">Rejected Locations</span>
+                                  <div className="flex flex-wrap gap-2">
+                                    {rejectedVenues.map(v => (
+                                      <Badge key={v.id} variant="destructive" className="bg-error/5 text-error border-error/20 py-1 px-2.5 rounded-lg flex items-center gap-1.5 opacity-80 shadow-sm">
+                                        <MapPin size={12} /> {getVenueName(v.venueId)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {pendingVenues.length > 0 && (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-warning uppercase tracking-widest block">Pending Confirmation</span>
+                                  <div className="flex flex-wrap gap-2">
+                                    {pendingVenues.map(v => (
+                                      <Badge key={v.id} variant="warning" className="bg-warning/5 text-warning border-warning/20 py-1 px-2.5 rounded-lg flex items-center gap-1.5 shadow-sm">
+                                        <MapPin size={12} /> {getVenueName(v.venueId)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
 
-                          {/* Status Badge */}
-                          <div className="shrink-0 flex flex-col items-end gap-2">
-                            <Badge
-                              className={cn(
-                                "px-4 py-2 font-bold text-sm rounded-full border-2",
-                                booking.status === 'approved'
-                                  ? isPast
-                                    ? 'bg-success/10 text-success border-success/30 shadow-lg shadow-success/20'
-                                    : 'bg-brand/10 text-brand border-brand/30 shadow-lg shadow-brand/20'
-                                  : booking.status === 'pending'
-                                    ? 'bg-warning/10 text-warning border-warning/30 shadow-lg shadow-warning/20'
-                                    : booking.status === 'partial'
-                                      ? 'bg-warning/10 text-warning border-warning/30 shadow-lg shadow-warning/20'
-                                      : 'bg-error/10 text-error border-error/30'
-                              )}
-                            >
-                              {isPast
-                                ? '✓ Completed'
-                                : booking.status === 'pending'
-                                  ? '⏳ Pending'
-                                  : booking.status === 'partial'
-                                    ? '⚠ Partial'
-                                    : '✓ ' + booking.status.charAt(0).toUpperCase() + booking.status.slice(1)
-                              }
+                          <div className="shrink-0 flex flex-col items-end">
+                            <Badge className={cn("px-4 py-2 font-bold text-sm rounded-full border-2",
+                              booking.status === 'approved' ? (isPast ? 'bg-success/10 text-success border-success/30' : 'bg-brand/10 text-brand border-brand/30') :
+                                booking.status === 'pending' || booking.status === 'partial' ? 'bg-warning/10 text-warning border-warning/30' : 'bg-error/10 text-error border-error/30'
+                            )}>
+                              {isPast ? '✓ Completed' : booking.status === 'pending' ? '⏳ Pending' : booking.status === 'partial' ? '⚠ Partial' : '✓ ' + booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                             </Badge>
-                            {booking.bookings.length > 1 && (
-                              <button
-                                onClick={() => {
-                                  // Simplified toggle logic for the demo, since we don't have separate state for each row here easily without refactor
-                                  // but let's just make it a toggleable section
-                                }}
-                                className="text-[10px] font-bold text-brand uppercase tracking-tighter hover:underline"
-                              >
-                                View Details
-                              </button>
-                            )}
                           </div>
                         </div>
 
-                        {/* Granular Venue Statuses for Multi-Venue Bookings */}
-                        {booking.bookings.length > 1 && (
-                          <div className="mt-6 pt-6 border-t border-borderSoft/30 space-y-3">
-                            <h4 className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Room Allocation Status</h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {booking.bookings.map((b) => (
-                                <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-hoverSoft/30 border border-borderSoft/50">
-                                  <span className="text-xs font-semibold text-textPrimary truncate mr-2">{getVenueName(b.venueId)}</span>
-                                  <Badge
-                                    variant={b.status === 'approved' ? 'success' : b.status === 'rejected' ? 'destructive' : 'pending'}
-                                    className="text-[9px] h-4 py-0 px-2 uppercase"
-                                  >
-                                    {b.status}
-                                  </Badge>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Post Event Actions */}
-                        {isPast && booking.status === 'approved' && (
-                          <div className="mt-6 pt-6 border-t border-borderSoft/50 flex flex-wrap gap-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleFileUpload(booking.ids[0], 'report')}
-                              className="gap-2 rounded-lg font-semibold hover:bg-brand/10 hover:border-brand/50 border-borderSoft"
-                            >
-                              <Upload size={16} />
-                              Upload Event Report
+                        <div className="mt-6 pt-6 border-t border-borderSoft/50 flex flex-wrap gap-3">
+                          {!isPast && (booking.status === 'approved' || booking.status === 'pending' || booking.status === 'partial') && (
+                            <Button variant="outline" size="sm" onClick={() => openExtraRoomDialog(booking)} className="gap-2 rounded-lg font-semibold bg-brand/5 text-brand border-brand/20 hover:bg-brand/10 shadow-sm">
+                              <Plus className="h-4 w-4" /> Request Extra Room
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleFileUpload(booking.ids[0], 'indent')}
-                              className="gap-2 rounded-lg font-semibold hover:bg-brand/10 hover:border-brand/50 border-borderSoft"
-                            >
-                              <FileText size={16} />
-                              Upload Indent
-                            </Button>
-                          </div>
-                        )}
+                          )}
+                          {isPast && booking.status === 'approved' && (
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => handleFileUpload(booking.ids[0], 'report')} className="gap-2 rounded-lg font-semibold hover:bg-brand/10 border-borderSoft">
+                                <Upload size={16} /> Upload Event Report
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => handleFileUpload(booking.ids[0], 'indent')} className="gap-2 rounded-lg font-semibold hover:bg-brand/10 border-borderSoft">
+                                <FileText size={16} /> Upload Indent
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -300,6 +235,13 @@ const MyBookings: React.FC = () => {
           })}
         </div>
       )}
+
+      <ExtraRoomDialog
+        booking={selectedBookingForExtra}
+        open={isExtraRoomOpen}
+        onOpenChange={setIsExtraRoomOpen}
+        onSuccess={fetchBookings}
+      />
     </motion.div>
   );
 };

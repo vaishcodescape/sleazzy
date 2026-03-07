@@ -41,6 +41,8 @@ export interface Booking {
   batchId?: string;
   clubId?: string;
   isPublic: boolean;
+  startTimeISO?: string;
+  endTimeISO?: string;
 }
 
 export interface GroupedBooking extends Omit<Booking, 'id' | 'venueId' | 'status'> {

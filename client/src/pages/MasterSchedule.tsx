@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { apiRequest, ApiBooking, ApiVenue, mapBooking, groupBookings } from '../lib/api';
+import { getSocket } from '../lib/socket';
 import { getErrorMessage } from '../lib/errors';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
-import { Calendar, Clock, MapPin, Search, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, Eye, EyeOff, Pencil } from 'lucide-react';
+import { Calendar, Clock, MapPin, Search, AlertTriangle, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, EyeOff, Pencil } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
@@ -57,6 +58,24 @@ const MasterSchedule: React.FC = () => {
         fetchBookings();
     }, [fetchBookings]);
 
+    useEffect(() => {
+        const socket = getSocket();
+
+        const handleRefresh = () => {
+            fetchBookings();
+        };
+
+        socket.on('events:updated', handleRefresh);
+        socket.on('booking:status_changed', handleRefresh);
+        socket.on('booking:new', handleRefresh);
+
+        return () => {
+            socket.off('events:updated', handleRefresh);
+            socket.off('booking:status_changed', handleRefresh);
+            socket.off('booking:new', handleRefresh);
+        };
+    }, [fetchBookings]);
+
     const venueNames = useMemo(() => {
         // Since venueName can be compound (e.g., 'Venue A, Venue B'), we should split them to populate the filter dropdown properly.
         const allNames = bookings.flatMap((b) => b.venueName ? b.venueName.split(', ') : []);
@@ -82,18 +101,17 @@ const MasterSchedule: React.FC = () => {
     });
 
     const sortedBookings = useMemo(() => {
-        const sorted = [...filteredBookings].sort((a, b) => {
-            let cmp = 0;
-            if (sortField === 'date') {
-                cmp = new Date(a.date).getTime() - new Date(b.date).getTime();
-            } else {
-                const aVal = (a[sortField] as string || '').toLowerCase();
-                const bVal = (b[sortField] as string || '').toLowerCase();
-                cmp = aVal.localeCompare(bVal);
-            }
-            return sortDirection === 'asc' ? cmp : -cmp;
-        });
-        return sorted;
+        return [...filteredBookings].sort((a, b) => {
+                    let cmp = 0;
+                    if (sortField === 'date') {
+                        cmp = new Date(a.date).getTime() - new Date(b.date).getTime();
+                    } else {
+                        const aVal = (a[sortField] as string || '').toLowerCase();
+                        const bVal = (b[sortField] as string || '').toLowerCase();
+                        cmp = aVal.localeCompare(bVal);
+                    }
+                    return sortDirection === 'asc' ? cmp : -cmp;
+                });
     }, [filteredBookings, sortField, sortDirection]);
 
     const handleSortClick = (field: SortField) => {
@@ -122,25 +140,6 @@ const MasterSchedule: React.FC = () => {
             : <ArrowDown size={14} />;
     };
 
-    const toggleVisibility = async (groupBooking: GroupedBooking, currentValue: boolean) => {
-        // Optimistic update
-        setBookings(prev =>
-            prev.map(b => b.batchId === groupBooking.batchId || b.ids[0] === groupBooking.ids[0] ? { ...b, isPublic: !currentValue } : b)
-        );
-        try {
-            await Promise.all(groupBooking.ids.map(id => apiRequest(`/api/admin/bookings/${id}/visibility`, {
-                method: 'PATCH',
-                auth: true,
-                body: { is_public: !currentValue },
-            })));
-        } catch (err) {
-            console.error('Failed to toggle visibility:', err);
-            // Revert on failure
-            setBookings(prev =>
-                prev.map(b => b.batchId === groupBooking.batchId || b.ids[0] === groupBooking.ids[0] ? { ...b, isPublic: currentValue } : b)
-            );
-        }
-    };
 
     return (
         <>
@@ -276,19 +275,6 @@ const MasterSchedule: React.FC = () => {
                                                     <div className="flex items-start justify-between mb-2">
                                                         <div className="font-semibold text-lg">{booking.eventName}</div>
                                                         <div className="flex items-center gap-2">
-                                                            <button
-                                                                onClick={() => toggleVisibility(booking, booking.isPublic)}
-                                                                title={booking.isPublic ? 'Visible to public' : 'Hidden from public'}
-                                                                className={`
-                                                                p-1.5 rounded-lg transition-all duration-200 cursor-pointer
-                                                                ${booking.isPublic
-                                                                        ? 'text-success hover:bg-success/10'
-                                                                        : 'text-textMuted hover:bg-hoverSoft'
-                                                                    }
-                                                            `}
-                                                            >
-                                                                {booking.isPublic ? <Eye size={16} /> : <EyeOff size={16} />}
-                                                            </button>
                                                             <Badge variant={getStatusVariant(booking.status)}>
                                                                 {booking.status === 'partial' ? 'Partial' : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                                                             </Badge>

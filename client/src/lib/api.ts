@@ -225,6 +225,8 @@ export const mapBooking = (booking: ApiBooking) => {
     date: start.toISOString(),
     startTime: start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
     endTime: end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    startTimeISO: booking.start_time,
+    endTimeISO: booking.end_time,
     status: booking.status,
     eventType: booking.event_type as any,
     expectedAttendees: booking.expected_attendees,
@@ -242,35 +244,62 @@ export const groupBookings = (bookings: Booking[], venues: ApiVenue[] = []): Gro
   const getVenueName = (id: string, booking: Booking) => {
     const venue = venues.find(v => v.id === id);
     if (venue) return venue.name;
-    // Fallback if venues list not provided or not found
     return (booking as any).venueName || id;
   };
 
+  const STATUS_PRIORITY: Record<string, number> = {
+    'approved': 3,
+    'pending': 2,
+    'rejected': 1
+  };
+
   for (const b of bookings) {
-    // Group by batchId OR (eventName + clubName + date + startTime + endTime)
-    const key = b.batchId || `${b.eventName}-${b.clubName}-${b.date}-${b.startTime}`;
+    // Group by batchId OR (eventName + clubName + date + startTime + eventType)
+    const key = b.batchId || `${b.eventName}-${b.clubName}-${b.date}-${b.startTime}-${b.eventType}`;
 
     if (grouped.has(key)) {
       const existing = grouped.get(key)!;
-      existing.ids.push(b.id);
-      existing.venueIds.push(b.venueId);
-      existing.bookings.push(b);
 
-      const existingNames = existing.venueName.split(', ');
-      const newName = getVenueName(b.venueId, b);
-      if (!existingNames.includes(newName)) {
-        existing.venueName = `${existing.venueName}, ${newName}`;
+      // Find if we already have this venue in this group
+      const existingVenueIndex = existing.bookings.findIndex(eb => eb.venueId === b.venueId);
+
+      if (existingVenueIndex !== -1) {
+        // Status prioritization: only keep the "best" status for a venue in a group
+        const existingStatus = existing.bookings[existingVenueIndex].status;
+        if (STATUS_PRIORITY[b.status] > STATUS_PRIORITY[existingStatus]) {
+          // Replace the inferior booking entry
+          const oldBookingId = existing.bookings[existingVenueIndex].id;
+          existing.bookings[existingVenueIndex] = b;
+          existing.ids = existing.ids.filter(id => id !== oldBookingId).concat(b.id);
+        }
+        // If the new one is same or worse priority, we just ignore it for the group display
+      } else {
+        // New venue for this group
+        existing.ids.push(b.id);
+        existing.venueIds.push(b.venueId);
+        existing.bookings.push(b);
       }
+
+      // Re-calculate display venue names from the unique set of active bookings
+      existing.venueName = existing.bookings
+        .map(book => getVenueName(book.venueId, book))
+        .filter((val, idx, self) => self.indexOf(val) === idx)
+        .join(', ');
 
       // Re-calculate combined status
       const statuses = existing.bookings.map(book => book.status);
-      const allSame = statuses.every(s => s === statuses[0]);
-      if (allSame) {
-        existing.status = statuses[0];
+      const allApproved = statuses.every(s => s === 'approved');
+      const allRejected = statuses.every(s => s === 'rejected');
+      const anyPending = statuses.some(s => s === 'pending');
+
+      if (allApproved) {
+        existing.status = 'approved';
+      } else if (allRejected) {
+        existing.status = 'rejected';
+      } else if (anyPending) {
+        // If there are pending items, the whole group is pending or partial
+        existing.status = statuses.every(s => s === 'pending') ? 'pending' : 'partial';
       } else {
-        // If there's at least one approved, and some are not, it's 'partial'
-        // Or if some are pending and some rejected, technically not partial yet in the "approved" sense, 
-        // but for UI consistency let's mark mixed results.
         existing.status = 'partial';
       }
     } else {

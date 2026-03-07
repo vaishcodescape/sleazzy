@@ -21,6 +21,8 @@ import NotificationPanel from '../components/NotificationPanel';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { getSocket } from '../lib/socket';
+import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -38,6 +40,31 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  // Global Notifications for Clubs
+  React.useEffect(() => {
+    if (user.role !== 'club') return;
+
+    const socket = getSocket();
+    const handleStatusChanged = (payload: { eventName: string; status: 'approved' | 'rejected' | 'deleted' }) => {
+      if (payload.status === 'approved') {
+        toast.success(`Booking Approved: ${payload.eventName}`, {
+          description: 'Your request has been officially confirmed.',
+          duration: 5000,
+        });
+      } else if (payload.status === 'rejected') {
+        toast.error(`Booking Rejected: ${payload.eventName}`, {
+          description: 'Your request was not approved by the admin.',
+          duration: 6000,
+        });
+      }
+    };
+
+    socket.on('booking:status_changed', handleStatusChanged);
+    return () => {
+      socket.off('booking:status_changed', handleStatusChanged);
+    };
+  }, [user]);
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -184,13 +211,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
               <ThemeToggle />
             </div>
 
-            {user.role === 'admin' ? (
-              <NotificationPanel />
-            ) : (
-              <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-md border border-borderSoft shadow-sm bg-card hover:bg-hoverSoft transition-all">
-                <Bell size={18} className="text-textSecondary" />
-              </Button>
-            )}
+            <NotificationPanel />
 
             <Button
               variant="ghost"

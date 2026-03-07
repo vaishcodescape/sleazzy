@@ -70,6 +70,7 @@ router.patch('/bookings/:id/status', async (req, res) => {
     type: status === 'approved' ? 'booking_approved' : 'booking_rejected',
     title: `Booking ${status.charAt(0).toUpperCase() + status.slice(1)}`,
     message: `"${data.event_name}" has been ${status}.`,
+    userId: data.user_id,
     metadata: { bookingId: id, status },
   });
 
@@ -182,6 +183,7 @@ router.put('/bookings/:id', async (req, res) => {
     status: data.status,
     eventName: data.event_name,
     clubId: data.club_id,
+    userId: data.user_id,
   });
 
   return res.json(data);
@@ -282,6 +284,7 @@ router.post('/bookings', async (req, res) => {
     type: 'booking_approved',
     title: 'Event Created by Admin',
     message: `"${event_name}" has been created and auto-approved.`,
+    userId: createdBookings[0].user_id,
     metadata: { batchId, venues: venue_ids },
   });
 
@@ -302,24 +305,21 @@ router.get('/stats', async (_req, res) => {
     const [
       { count: pendingCount, error: pendingError },
       { count: scheduledCount, error: scheduledError },
-      { count: clubsCount, error: clubsError },
-      { count: rejectedCount, error: rejectedError }
+      { count: clubsCount, error: clubsError }
     ] = await Promise.all([
       supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
-      supabase.from('clubs').select('*', { count: 'exact', head: true }),
-      supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'rejected')
+      supabase.from('clubs').select('*', { count: 'exact', head: true })
     ]);
 
     if (pendingError) throw pendingError;
     if (scheduledError) throw scheduledError;
     if (clubsError) throw clubsError;
-    if (rejectedError) throw rejectedError;
 
     return res.json({
       pending: pendingCount || 0,
       scheduled: scheduledCount || 0,
-      conflicts: rejectedCount || 0, // Using rejected as a proxy for now
+      conflicts: 0, // Rejected bookings are now considered 'done', not conflicts
       activeClubs: clubsCount || 0
     });
   } catch (error: any) {

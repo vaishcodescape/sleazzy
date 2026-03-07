@@ -139,6 +139,22 @@ const App: React.FC = () => {
     }
   };
 
+  // Global socket room joining
+  React.useEffect(() => {
+    if (!user) return;
+
+    const socket = getSocket();
+    if (user.role === 'admin') {
+      socket.emit('join:admin');
+    } else if (user.email) {
+      // Fetch club info to join the correct room
+      apiRequest<{ id: string }[]>('/api/clubs').then(clubs => {
+        const match = clubs.find((c: any) => c.email === user.email);
+        if (match?.id) socket.emit('join:club', match.id);
+      }).catch(() => { });
+    }
+  }, [user]);
+
   if (!user) {
     return (
       <ErrorBoundary>

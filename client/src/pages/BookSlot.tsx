@@ -11,8 +11,11 @@ import {
   Lock,
   ChevronDown,
   Check,
-  Info
+  Info,
+  Clock,
+  Plus
 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { CLUBS, VENUES } from '../constants';
 import { apiRequest, type ApiClub, type ApiVenue } from '../lib/api';
 import { getErrorMessage } from '../lib/errors';
@@ -36,6 +39,7 @@ interface BookSlotProps {
 }
 
 const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
+  const location = useLocation();
   const [clubs, setClubs] = useState<ApiClub[]>([]);
   const [venues, setVenues] = useState<ApiVenue[]>([]);
   const [formData, setFormData] = useState({
@@ -52,6 +56,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [busyVenueIds, setBusyVenueIds] = useState<string[]>([]);
   const [metaError, setMetaError] = useState<string | null>(null);
 
   const [warnings, setWarnings] = useState({
@@ -87,6 +92,30 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
 
     fetchMeta();
   }, []);
+
+  // Handle pre-fill from location state (Request Extra Room)
+  useEffect(() => {
+    const prefill = location.state?.prefill;
+    if (prefill) {
+      setFormData(prev => ({
+        ...prev,
+        eventName: prefill.eventName || '',
+        eventType: prefill.eventType || 'closed_club',
+        expectedAttendees: prefill.expectedAttendees || '',
+        date: prefill.date || '',
+        startTime: prefill.startTime || '',
+        endTime: prefill.endTime || '',
+        clubName: prefill.clubName || prev.clubName
+      }));
+
+      if (prefill.date) {
+        const d = new Date(prefill.date);
+        if (!isNaN(d.getTime())) {
+          setSelectedDate(d);
+        }
+      }
+    }
+  }, [location.state]);
 
   // Handle date selection from Calendar
   useEffect(() => {
@@ -198,14 +227,10 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
 
     if (end <= start) {
       errorMsg = "End time must be after start time.";
-    } else if (isWeekend) {
-      if (start < "08:00") {
-        errorMsg = "On weekends, bookings are allowed from 8:00 AM to 12:00 AM.";
-      }
-    } else {
-      if (start < "16:00") {
-        errorMsg = "On weekdays, bookings are only allowed from 4:00 PM to 12:00 AM.";
-      }
+    } else if (isWeekend && start < "08:00") {
+      errorMsg = "On weekends, bookings are allowed from 8:00 AM to 12:00 AM.";
+    } else if (!isWeekend && start < "16:00") {
+      errorMsg = "On weekdays, bookings are only allowed from 4:00 PM to 12:00 AM.";
     }
 
     setWarnings(prev => ({ ...prev, hours: errorMsg }));
@@ -214,13 +239,12 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
   // Conflict Logic
   useEffect(() => {
     if (!formData.date || !formData.startTime || !formData.endTime || !formData.clubName) {
-      setWarnings(prev => ({ ...prev, conflict: '' }));
       return;
     }
 
     const checkConflicts = async () => {
       try {
-        if (!formData.date || !formData.startTime || !formData.endTime) return;
+        if (!formData.date || !formData.startTime || !formData.endTime || venues.length === 0) return;
 
         const startDateTime = new Date(`${formData.date}T${formData.startTime}:00`);
         const endDateTime = new Date(`${formData.date}T${formData.endTime}:00`);
@@ -229,11 +253,8 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
           startTime: startDateTime.toISOString(),
           endTime: endDateTime.toISOString(),
           clubId: clubs.find(c => c.name === formData.clubName)?.id || '',
+          venueIds: venues.map(v => v.id).join(','),
         });
-
-        if (formData.venueIds.length > 0) {
-          query.append('venueIds', formData.venueIds.join(','));
-        }
 
         const { hasConflict, message } = await apiRequest<{ hasConflict: boolean; message: string }>(
           `/api/bookings/check-conflict?${query.toString()}`,
@@ -241,18 +262,19 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
         );
 
         if (hasConflict) {
-          setWarnings(prev => ({ ...prev, conflict: message }));
+          const busyNames = message.split(': ').pop()?.split(', ') || [];
+          const busyIds = venues.filter(v => busyNames.includes(v.name)).map(v => v.id);
+          setBusyVenueIds(busyIds);
         } else {
-          setWarnings(prev => ({ ...prev, conflict: '' }));
+          setBusyVenueIds([]);
         }
       } catch (err) {
         console.error('Failed to check conflicts:', err);
-        setWarnings(prev => ({ ...prev, conflict: 'Could not verify conflicts. Please check your connection and try again.' }));
       }
     };
 
     checkConflicts();
-  }, [formData.date, formData.startTime, formData.endTime, formData.clubName, formData.venueIds]);
+  }, [formData.date, formData.startTime, formData.endTime, formData.clubName, venues]);
 
   // Co-curricular limit check
   useEffect(() => {
@@ -297,6 +319,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
   };
 
   const handleVenueToggle = (venueId: string) => {
+    if (busyVenueIds.includes(venueId)) return;
     setFormData(prev => {
       const current = prev.venueIds;
       const updated = current.includes(venueId)
@@ -309,7 +332,8 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (warnings.timeline || warnings.conflict || warnings.hours || warnings.coCurricularLimit?.startsWith('This club has already')) {
+    const isSelectedVenueBusy = formData.venueIds.some(id => busyVenueIds.includes(id));
+    if (warnings.timeline || isSelectedVenueBusy || warnings.hours || warnings.coCurricularLimit?.startsWith('This club has already')) {
       toastError('Please resolve the warnings before submitting.');
       return;
     }
@@ -372,7 +396,8 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
     }
   };
 
-  const hasErrors = !!warnings.timeline || !!warnings.conflict || !!warnings.hours || !!warnings.coCurricularLimit?.startsWith('This club has already');
+  const isSelectedVenueBusy = formData.venueIds.some(id => busyVenueIds.includes(id));
+  const hasErrors = !!warnings.timeline || isSelectedVenueBusy || !!warnings.hours || !!warnings.coCurricularLimit?.startsWith('This club has already');
 
   return (
     <motion.div
@@ -490,6 +515,40 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Booking Preview Section */}
+              <div className="pt-6 border-t border-borderSoft/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-8 w-1.5 bg-gradient-to-b from-success to-emerald-600 rounded-full" />
+                  <h3 className="text-lg font-bold text-textPrimary">Your Selection</h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="p-4 bg-success/5 border border-success/20 rounded-xl space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center text-success">
+                        <CalendarIcon size={20} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-success uppercase tracking-wider">Event Date</p>
+                        <p className="text-sm font-bold text-textPrimary">
+                          {formData.date ? new Date(formData.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', weekday: 'short' }) : 'Not selected'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center text-success">
+                        <Clock size={20} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-success uppercase tracking-wider">Time Range</p>
+                        <p className="text-sm font-bold text-textPrimary">
+                          {formData.startTime && formData.endTime ? `${formData.startTime} – ${formData.endTime}` : 'Pick times'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -651,19 +710,12 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                     />
                   </div>
 
-                  {(warnings.hours || warnings.conflict) && (
+                  {(warnings.hours) && (
                     <div className="sm:col-span-2 space-y-3">
                       {warnings.hours && (
                         <Alert className="bg-error/5 border-2 border-error/30 text-error rounded-xl">
                           <AlertTriangle size={16} className="shrink-0" />
                           <AlertDescription className="font-semibold ml-2">{warnings.hours}</AlertDescription>
-                        </Alert>
-                      )}
-                      {warnings.conflict && (
-                        <Alert className="bg-error/5 border-2 border-error/30 text-error rounded-xl">
-                          <AlertOctagon size={16} className="shrink-0" />
-                          <AlertTitle className="font-bold">Conflict Detected</AlertTitle>
-                          <AlertDescription className="font-semibold mt-1">{warnings.conflict}</AlertDescription>
                         </Alert>
                       )}
                     </div>
@@ -688,7 +740,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                         variant="outline"
                         role="combobox"
                         className={cn(
-                          "w-full h-10 justify-between border-borderSoft hover:bg-hoverSoft transition-all bg-card text-textPrimary rounded-md shadow-sm font-medium",
+                          "w-full h-11 justify-between border-borderSoft hover:bg-hoverSoft/50 transition-all bg-card text-textPrimary rounded-xl shadow-sm font-bold text-sm",
                           formData.venueIds.length === 0 && "text-textMuted"
                         )}
                       >
@@ -700,69 +752,93 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
                               : "Choose venues..."}
                           </span>
                         </div>
-                        <ChevronDown className="h-5 w-5 opacity-50 shrink-0" />
+                        <ChevronDown className="h-5 w-5 opacity-40 shrink-0" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[360px] p-0 rounded-xl shadow-2xl" align="start">
-                      <div className="max-h-[400px] overflow-y-auto space-y-1 p-3">
+                    <PopoverContent
+                      className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl shadow-2xl border-borderSoft"
+                      align="start"
+                    >
+                      <div className="max-h-[220px] overflow-y-auto space-y-0.5 p-1 relative">
                         {/* Category A Venues */}
-                        <div className="sticky top-0 bg-popover z-10 px-3 py-2 mb-2">
-                          <div className="px-2 py-1.5 text-xs font-bold text-brand uppercase tracking-wider bg-brand/10 rounded-lg border border-brand/20 flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-brand" />
-                            Standard Venues (Category A)
+                        <div className="px-2 py-1 mb-1 mt-1">
+                          <div className="text-[11px] font-black text-brand uppercase tracking-widest flex items-center gap-2">
+                            <div className="h-1.5 w-1.5 rounded-full bg-brand" />
+                            Standard Venues
                           </div>
                         </div>
 
                         {venues.filter(v => normalizeVenueCategory(v.category) === 'A').length === 0 ? (
-                          <div className="px-2 py-3 text-center text-xs text-textMuted">No Category A venues</div>
+                          <div className="px-3 py-4 text-center text-xs font-semibold text-textMuted/60 uppercase tracking-widest">No Category A venues</div>
                         ) : (
                           venues.filter(v => normalizeVenueCategory(v.category) === 'A').map(v => (
                             <div
                               key={v.id}
-                              className="flex items-center space-x-3 px-3 py-2.5 hover:bg-hoverSoft/50 rounded-lg cursor-pointer transition-all group"
+                              className="flex items-center space-x-3 px-3 py-2.5 hover:bg-brand/5 rounded-lg cursor-pointer transition-all group mx-1"
                               onClick={() => handleVenueToggle(v.id)}
                             >
                               <div className={cn(
-                                "h-5 w-5 border-2 rounded-md flex items-center justify-center transition-all shrink-0",
+                                "h-4 w-4 border rounded-md flex items-center justify-center transition-all shrink-0",
                                 formData.venueIds.includes(v.id)
-                                  ? "bg-brand border-brand text-white shadow-md shadow-brand/30"
+                                  ? "bg-brand border-brand text-white shadow-sm"
                                   : "border-textMuted/40 bg-transparent group-hover:border-brand/50"
                               )}>
-                                {formData.venueIds.includes(v.id) && <Check className="h-3.5 w-3.5" />}
+                                {formData.venueIds.includes(v.id) && <Check className="h-3 w-3" />}
                               </div>
-                              <span className="text-sm font-medium text-textPrimary flex-1">{v.name}</span>
-                              <Badge variant="outline" className="text-xs bg-brand/5 border-brand/30 text-brand">Cat A</Badge>
+                              <span className={cn(
+                                "text-sm font-bold flex-1 transition-colors truncate",
+                                busyVenueIds.includes(v.id) ? "text-textMuted/50 italic font-medium" : "text-textPrimary group-hover:text-brand"
+                              )}>
+                                {v.name}
+                              </span>
+                              {busyVenueIds.includes(v.id) ? (
+                                <span className="text-[10px] font-black text-error uppercase tracking-tighter ml-2">Busy</span>
+                              ) : (
+                                <span className="text-[9px] font-bold bg-brand/10 border border-brand/20 text-brand px-1.5 py-0.5 rounded uppercase ml-2">Cat A</span>
+                              )}
                             </div>
                           ))
                         )}
 
                         {/* Category B Venues */}
-                        <div className="sticky top-0 bg-popover z-10 px-3 py-2 mt-4 mb-2">
-                          <div className="px-2 py-1.5 text-xs font-bold text-warning uppercase tracking-wider bg-warning/10 rounded-lg border border-warning/20 flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-warning" />
-                            Restricted Venues (Category B)
+                        <div className="px-2 py-1 mt-3 mb-1">
+                          <div className="text-[11px] font-black text-warning uppercase tracking-widest flex items-center gap-2">
+                            <div className="h-1.5 w-1.5 rounded-full bg-warning" />
+                            Restricted Venues
                           </div>
                         </div>
 
                         {venues.filter(v => normalizeVenueCategory(v.category) === 'B').length === 0 ? (
-                          <div className="px-2 py-3 text-center text-xs text-textMuted">No Category B venues</div>
+                          <div className="px-3 py-4 text-center text-xs font-semibold text-textMuted/60 uppercase tracking-widest">No Category B venues</div>
                         ) : (
                           venues.filter(v => normalizeVenueCategory(v.category) === 'B').map(v => (
                             <div
                               key={v.id}
-                              className="flex items-center space-x-3 px-3 py-2.5 hover:bg-hoverSoft/50 rounded-lg cursor-pointer transition-all group"
+                              className="flex items-center space-x-3 px-3 py-2.5 hover:bg-warning/5 rounded-lg cursor-pointer transition-all group mx-1"
                               onClick={() => handleVenueToggle(v.id)}
                             >
                               <div className={cn(
-                                "h-5 w-5 border-2 rounded-md flex items-center justify-center transition-all shrink-0",
+                                "h-4 w-4 border rounded-md flex items-center justify-center transition-all shrink-0",
                                 formData.venueIds.includes(v.id)
-                                  ? "bg-warning border-warning text-white shadow-md shadow-warning/30"
+                                  ? "bg-warning border-warning text-white shadow-sm"
                                   : "border-textMuted/40 bg-transparent group-hover:border-warning/50"
                               )}>
-                                {formData.venueIds.includes(v.id) && <Check className="h-3.5 w-3.5" />}
+                                {formData.venueIds.includes(v.id) && <Check className="h-3 w-3" />}
                               </div>
-                              <span className="text-sm font-medium text-textPrimary flex-1">{v.name}</span>
-                              <Lock size={14} className="text-warning opacity-70 shrink-0" />
+                              <span className={cn(
+                                "text-sm font-bold flex-1 transition-colors truncate",
+                                busyVenueIds.includes(v.id) ? "text-textMuted/50 italic font-medium" : "text-textPrimary group-hover:text-warning"
+                              )}>
+                                {v.name}
+                              </span>
+                              {busyVenueIds.includes(v.id) ? (
+                                <span className="text-[10px] font-black text-error uppercase tracking-tighter ml-2">Busy</span>
+                              ) : (
+                                <div className="flex items-center gap-1 bg-warning/10 border border-warning/20 px-1.5 py-0.5 rounded ml-2">
+                                  <span className="text-[9px] font-bold text-warning uppercase">Cat B</span>
+                                  <Lock size={10} className="text-warning opacity-80" />
+                                </div>
+                              )}
                             </div>
                           ))
                         )}

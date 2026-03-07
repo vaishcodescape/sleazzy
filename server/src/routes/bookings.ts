@@ -67,6 +67,8 @@ router.get('/my-bookings', authMiddleware, async (req, res) => {
 });
 
 router.get('/bookings/check-conflict', checkConflict);
+import { getBusyVenues } from '../controllers/bookingController';
+router.get('/busy-venues', getBusyVenues);
 router.post('/bookings', authMiddleware, createBooking);
 
 router.get('/public-bookings', async (_req, res) => {
