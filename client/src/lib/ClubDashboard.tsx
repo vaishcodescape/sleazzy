@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CalendarPlus, Clock, MapPin, ChevronRight, Info, Users, AlertTriangle, RefreshCw } from 'lucide-react';
-import { apiRequest, mapBooking, type ApiBooking, type ApiVenue } from './api';
+import { apiRequest, mapBooking, groupBookings, type ApiBooking, type ApiVenue } from './api';
 import { getErrorMessage } from './errors';
 import { Booking } from '../types';
 import { Button } from '../components/ui/button';
@@ -139,11 +139,11 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
   const upcomingEvents = React.useMemo(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    return myEvents
+    return groupBookings(myEvents, venues)
       .filter(e => new Date(e.date) >= now)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(0, 6);
-  }, [myEvents]);
+  }, [myEvents, venues]);
 
   if (error) {
     return (
@@ -244,45 +244,52 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
                   />
                 </div>
 
-                {/* Selected Date Details - filling available space */}
                 <div className="lg:flex-1 border-t lg:border-t-0 lg:border-l border-borderSoft lg:pl-6 pt-4 lg:pt-0 flex flex-col min-w-0">
                   <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                     {selectedDate ? selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : 'Select a date'}
                   </h4>
 
                   <div className="flex-1 overflow-y-auto space-y-3 max-h-[300px]">
-                    {selectedDateEvents.length > 0 ? (
-                      selectedDateEvents.map((event, index) => (
-                        <motion.div
-                          key={event.id}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.3, delay: index * 0.05 }}
-                          whileHover={{ scale: 1.01 }}
-                        >
-                          <Card className="border border-borderSoft rounded-xl hover:border-brand/30 transition-colors rounded-xl">
-                            <CardContent className="p-4">
-                              <div className="font-semibold text-foreground text-sm mb-1">{event.eventName}</div>
-                              <div className="text-xs text-primary font-medium mt-0.5 mb-2">{event.clubName}</div>
-                              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                                <Clock size={12} className="text-primary/60" />
-                                <span>{event.startTime} - {event.endTime}</span>
-                              </div>
-                              <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
-                                <MapPin size={12} className="text-primary/60" />
-                                <span>{getVenueName(event.venueId)}</span>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </motion.div>
-                      ))
-                    ) : (
-                      selectedDate ? (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                          No events scheduled for this day.
-                        </div>
-                      ) : null
-                    )}
+                    {selectedDate ? (
+                      (() => {
+                        const dayGrouped = groupBookings(selectedDateEvents, venues);
+                        return dayGrouped.length > 0 ? (
+                          dayGrouped.map((event, index) => (
+                            <motion.div
+                              key={event.batchId || event.ids?.[0] || index}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ duration: 0.3, delay: index * 0.05 }}
+                              whileHover={{ scale: 1.01 }}
+                            >
+                              <Card className="border border-borderSoft rounded-xl hover:border-brand/30 transition-colors">
+                                <CardContent className="p-4">
+                                  <div className="font-semibold text-foreground text-sm mb-1">{event.eventName}</div>
+                                  <div className="text-xs text-primary font-medium mt-0.5 mb-2">{event.clubName}</div>
+                                  <div className="mt-2 flex items-start gap-2 text-xs text-muted-foreground">
+                                    <Clock size={12} className="text-primary/60 mt-0.5" />
+                                    <span>{event.startTime} - {event.endTime}</span>
+                                  </div>
+                                  <div className="mt-1.5 flex items-start gap-2 text-xs text-muted-foreground">
+                                    <MapPin size={12} className="text-primary/60 mt-0.5" />
+                                    <span>{event.venueName}</span>
+                                  </div>
+                                  {event.status === 'partial' && (
+                                    <div className="mt-2">
+                                      <Badge variant="warning" className="text-[10px]">PARTIAL APPROVAL</Badge>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            No events scheduled for this day.
+                          </div>
+                        );
+                      })()
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -307,9 +314,9 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/40 overflow-y-auto max-h-[400px]">
-                {myEvents.map((event, index) => (
+                {groupBookings(myEvents, venues).map((event, index) => (
                   <motion.div
-                    key={event.id}
+                    key={event.batchId || event.ids?.[0] || index}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -322,7 +329,7 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
                       <MapPin size={12} />
-                      {getVenueName(event.venueId)}
+                      {event.venueName}
                     </div>
                     <div className="mt-2 flex items-center gap-3">
                       {event.eventType && (
@@ -342,11 +349,12 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
                         variant={
                           event.status === 'approved' ? 'success' :
                             event.status === 'pending' ? 'pending' :
-                              'destructive'
+                              event.status === 'partial' ? 'warning' :
+                                'destructive'
                         }
                         className="text-[10px]"
                       >
-                        <span>{event.status}</span>
+                        <span>{event.status === 'partial' ? 'Partially Approved' : event.status}</span>
                       </Badge>
                     </div>
                   </motion.div>
@@ -401,8 +409,13 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <MapPin size={12} className="text-primary/60 shrink-0" />
-                            <span>{getVenueName(event.venueId)}</span>
+                            <span>{event.venueName}</span>
                           </div>
+                          {event.status === 'partial' && (
+                            <div className="mt-2">
+                              <Badge variant="warning" className="text-[10px]">PARTIALLY APPROVED</Badge>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

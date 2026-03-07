@@ -236,29 +236,51 @@ export const mapBooking = (booking: ApiBooking) => {
 
 import { Booking, GroupedBooking } from '../types';
 
-export const groupBookings = (bookings: Booking[]): GroupedBooking[] => {
+export const groupBookings = (bookings: Booking[], venues: ApiVenue[] = []): GroupedBooking[] => {
   const grouped = new Map<string, GroupedBooking>();
 
+  const getVenueName = (id: string, booking: Booking) => {
+    const venue = venues.find(v => v.id === id);
+    if (venue) return venue.name;
+    // Fallback if venues list not provided or not found
+    return (booking as any).venueName || id;
+  };
+
   for (const b of bookings) {
-    const key = b.batchId || b.id; // Fallback to id if no batchId
+    // Group by batchId OR (eventName + clubName + date + startTime + endTime)
+    const key = b.batchId || `${b.eventName}-${b.clubName}-${b.date}-${b.startTime}`;
 
     if (grouped.has(key)) {
       const existing = grouped.get(key)!;
       existing.ids.push(b.id);
       existing.venueIds.push(b.venueId);
+      existing.bookings.push(b);
 
-      // Prevent duplicate venue names if the same venue was booked multiple times in a single batch (shouldn't happen, but good safeguard)
-      const existingNames = existing.venueName?.split(', ') || [];
-      const newName = (b as any).venueName || b.venueId;
+      const existingNames = existing.venueName.split(', ');
+      const newName = getVenueName(b.venueId, b);
       if (!existingNames.includes(newName)) {
-        existing.venueName = existing.venueName ? `${existing.venueName}, ${newName}` : newName;
+        existing.venueName = `${existing.venueName}, ${newName}`;
+      }
+
+      // Re-calculate combined status
+      const statuses = existing.bookings.map(book => book.status);
+      const allSame = statuses.every(s => s === statuses[0]);
+      if (allSame) {
+        existing.status = statuses[0];
+      } else {
+        // If there's at least one approved, and some are not, it's 'partial'
+        // Or if some are pending and some rejected, technically not partial yet in the "approved" sense, 
+        // but for UI consistency let's mark mixed results.
+        existing.status = 'partial';
       }
     } else {
       grouped.set(key, {
         ...b,
         ids: [b.id],
         venueIds: [b.venueId],
-        venueName: (b as any).venueName || b.venueId,
+        venueName: getVenueName(b.venueId, b),
+        bookings: [b],
+        status: b.status,
       });
     }
   }

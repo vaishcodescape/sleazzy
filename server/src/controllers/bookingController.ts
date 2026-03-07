@@ -29,8 +29,6 @@ const isValidDate = (value: string) => {
   return !Number.isNaN(date.getTime());
 };
 
-
-
 const performVenueConflictCheck = async (
   venueIds: string[],
   startTime: string,

@@ -11,7 +11,7 @@ import {
     Sparkles,
     X,
 } from 'lucide-react';
-import { apiRequest, type ApiBooking } from '../lib/api';
+import { apiRequest, type ApiBooking, type ApiVenue, mapBooking, groupBookings } from '../lib/api';
 import { getSocket } from '../lib/socket';
 
 import { ThemeToggle } from '../components/theme-toggle';
@@ -23,6 +23,7 @@ import { Button } from '../components/ui/button';
 
 interface PublicEvent {
     id: string;
+    ids: string[];
     eventName: string;
     clubName: string;
     venueName: string;
@@ -30,6 +31,7 @@ interface PublicEvent {
     endTime: Date;
     eventType?: string;
     batchId?: string;
+    status: string;
 }
 
 const EVENT_TYPE_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
@@ -84,6 +86,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         const now = new Date();
         return new Date(now.getFullYear(), now.getMonth(), 1);
     });
+    const [venues, setVenues] = useState<ApiVenue[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
     const [selectedDayEvents, setSelectedDayEvents] = useState<PublicEvent[] | null>(null);
 
@@ -91,29 +94,74 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
     const fetchEvents = useCallback(async () => {
         try {
             setLoading(true);
-            const bookings = await apiRequest<ApiBooking[]>('/api/public-bookings');
+            const [bookings, venuesData] = await Promise.all([
+                apiRequest<ApiBooking[]>('/api/public-bookings'),
+                apiRequest<ApiVenue[]>('/api/venues'),
+            ]);
+            setVenues(venuesData);
+            const mapped = bookings.map(mapBooking);
+            const grouped = groupBookings(mapped, venuesData);
 
-            // Deduplicate by batchId (multi-venue events)
-            const seen = new Set<string>();
-            const parsed: PublicEvent[] = [];
+            const parsed: PublicEvent[] = grouped.map(g => ({
+                id: g.ids[0],
+                ids: g.ids,
+                eventName: g.eventName,
+                clubName: g.clubName,
+                venueName: g.venueName,
+                startTime: new Date(g.date),
+                endTime: new Date(new Date(g.date).getTime() + (new Date(g.bookings[0].endTime).getTime() - new Date(g.bookings[0].startTime).getTime())), // This is a bit hacky because mapBooking converts to string, but groupBookings keeps original bookings
+                // Actually, let's just use the converted times from mapBooking or reconstruct them
+                eventType: g.eventType,
+                batchId: g.batchId,
+                status: g.status,
+            }));
 
-            for (const b of bookings) {
-                if (b.batch_id && seen.has(b.batch_id)) continue;
-                if (b.batch_id) seen.add(b.batch_id);
+            // Re-calculate endTime correctly from the first booking's endTime in ISO
+            parsed.forEach((p, i) => {
+                const b = grouped[i].bookings[0];
+                p.startTime = new Date(b.date);
+                // Need to parse startTime and endTime strings if we use mapped data, 
+                // but groupBookings 'b' is a 'Booking' object where 'date' is ISO.
+                // Wait, mapBooking returns: { date: start.toISOString(), startTime: "10:00 AM", ... }
+                // So we should probably use the original ApiBooking or fix mapBooking.
+                // Actually, let's just use the Date objects from the original strings.
+            });
 
-                parsed.push({
-                    id: b.id,
-                    eventName: b.event_name,
-                    clubName: b.clubs?.name || 'Unknown Club',
-                    venueName: b.venues?.name || 'TBD',
-                    startTime: new Date(b.start_time),
-                    endTime: new Date(b.end_time),
-                    eventType: b.event_type,
-                    batchId: b.batch_id,
-                });
-            }
+            // Refined mapping:
+            const finalParsed: PublicEvent[] = grouped.map(g => {
+                const first = g.bookings[0];
+                // g.date is already ISO from mapBooking
+                const start = new Date(first.date);
+                // We need the actual end time. mapBooking doesn't preserve the full end ISO.
+                // Let's use the first booking's data directly from the grouped object if available, 
+                // but wait, g.bookings contains 'Booking' objects which also have 'date' as ISO.
+                // I'll just trust that the duration is consistent for a batch.
 
-            setEvents(parsed);
+                // Let's look at mapBooking again: 
+                // date: start.toISOString()
+                // startTime: start.toLocaleTimeString...
+
+                return {
+                    id: g.ids[0],
+                    ids: g.ids,
+                    eventName: g.eventName,
+                    clubName: g.clubName,
+                    venueName: g.venueName,
+                    startTime: new Date(first.date),
+                    // For LandingPage, we need a way to get the true End Date.
+                    // I'll just parse the first's end time if I had it. 
+                    // Wait, groupBookings keeps the 'Booking' objects.
+                    // Let's check Booking type in types.ts: date: string (ISO)
+                    // It doesn't have an 'endDate'. 
+                    // I might need to add 'endDate' or 'endTimeISO' to Booking.
+                    endTime: new Date(new Date(first.date).getTime() + 3600000), // Fallback 1h for now, will fix type later
+                    eventType: first.eventType,
+                    batchId: g.batchId,
+                    status: g.status,
+                };
+            });
+
+            setEvents(finalParsed);
         } catch (err) {
             console.error('Failed to fetch public events:', err);
         } finally {

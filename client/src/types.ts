@@ -43,8 +43,10 @@ export interface Booking {
   isPublic: boolean;
 }
 
-export interface GroupedBooking extends Omit<Booking, 'id' | 'venueId'> {
+export interface GroupedBooking extends Omit<Booking, 'id' | 'venueId' | 'status'> {
   ids: string[];
   venueIds: string[];
-  venueName?: string; // Comma-separated or compound string
+  venueName: string; // Comma-separated or compound string
+  status: BookingStatus | 'partial'; // Support 'partial' for mixed statuses
+  bookings: Booking[]; // The original individual items
 }

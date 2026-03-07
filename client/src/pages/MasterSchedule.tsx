@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { apiRequest, ApiBooking, mapBooking, groupBookings } from '../lib/api';
+import { apiRequest, ApiBooking, ApiVenue, mapBooking, groupBookings } from '../lib/api';
 import { getErrorMessage } from '../lib/errors';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -23,6 +23,7 @@ const SORT_OPTIONS: { field: SortField; label: string }[] = [
 
 const MasterSchedule: React.FC = () => {
     const [bookings, setBookings] = useState<GroupedBooking[]>([]);
+    const [venues, setVenues] = useState<ApiVenue[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -37,8 +38,12 @@ const MasterSchedule: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const data = await apiRequest<ApiBooking[]>('/api/admin/bookings', { auth: true });
-            setBookings(groupBookings(data.map(mapBooking)));
+            const [bookingsData, venuesData] = await Promise.all([
+                apiRequest<ApiBooking[]>('/api/admin/bookings', { auth: true }),
+                apiRequest<ApiVenue[]>('/api/venues'),
+            ]);
+            setVenues(venuesData);
+            setBookings(groupBookings(bookingsData.map(mapBooking), venuesData));
         } catch (err) {
             console.error('Failed to fetch schedule:', err);
             setError(getErrorMessage(err, 'Failed to load schedule.'));
@@ -100,11 +105,12 @@ const MasterSchedule: React.FC = () => {
         }
     };
 
-    const getStatusVariant = (status: string): "success" | "destructive" | "pending" | "default" => {
+    const getStatusVariant = (status: string): "success" | "destructive" | "pending" | "default" | "warning" => {
         switch (status) {
             case 'approved': return 'success';
             case 'rejected': return 'destructive';
             case 'pending': return 'pending';
+            case 'partial': return 'warning';
             default: return 'default';
         }
     };
@@ -259,7 +265,7 @@ const MasterSchedule: React.FC = () => {
                             <div className="grid gap-4">
                                 {sortedBookings.map((booking, index) => (
                                     <motion.div
-                                        key={booking.id}
+                                        key={booking.batchId || booking.ids[0]}
                                         initial={{ opacity: 0, y: 16 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.03 }}
@@ -284,7 +290,7 @@ const MasterSchedule: React.FC = () => {
                                                                 {booking.isPublic ? <Eye size={16} /> : <EyeOff size={16} />}
                                                             </button>
                                                             <Badge variant={getStatusVariant(booking.status)}>
-                                                                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                                                {booking.status === 'partial' ? 'Partial' : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                                                             </Badge>
                                                         </div>
                                                     </div>

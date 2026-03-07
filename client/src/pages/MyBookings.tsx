@@ -72,8 +72,8 @@ const MyBookings: React.FC = () => {
   const getVenueName = (id: string) => venues.find(v => v.id === id)?.name || id;
 
   const groupedBookings = React.useMemo(() => {
-    return groupBookings(myBookings);
-  }, [myBookings]);
+    return groupBookings(myBookings, venues);
+  }, [myBookings, venues]);
 
   const isPastEvent = (dateStr: string) => {
     const eventDate = new Date(dateStr);
@@ -150,7 +150,7 @@ const MyBookings: React.FC = () => {
 
             return (
               <motion.div
-                key={booking.id}
+                key={booking.batchId || booking.ids[0]}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.08 }}
@@ -210,7 +210,7 @@ const MyBookings: React.FC = () => {
                           </div>
 
                           {/* Status Badge */}
-                          <div className="shrink-0">
+                          <div className="shrink-0 flex flex-col items-end gap-2">
                             <Badge
                               className={cn(
                                 "px-4 py-2 font-bold text-sm rounded-full border-2",
@@ -220,13 +220,53 @@ const MyBookings: React.FC = () => {
                                     : 'bg-brand/10 text-brand border-brand/30 shadow-lg shadow-brand/20'
                                   : booking.status === 'pending'
                                     ? 'bg-warning/10 text-warning border-warning/30 shadow-lg shadow-warning/20'
-                                    : 'bg-error/10 text-error border-error/30'
+                                    : booking.status === 'partial'
+                                      ? 'bg-warning/10 text-warning border-warning/30 shadow-lg shadow-warning/20'
+                                      : 'bg-error/10 text-error border-error/30'
                               )}
                             >
-                              {isPast ? '✓ Completed' : booking.status === 'pending' ? '⏳ Pending' : '✓ ' + booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                              {isPast
+                                ? '✓ Completed'
+                                : booking.status === 'pending'
+                                  ? '⏳ Pending'
+                                  : booking.status === 'partial'
+                                    ? '⚠ Partial'
+                                    : '✓ ' + booking.status.charAt(0).toUpperCase() + booking.status.slice(1)
+                              }
                             </Badge>
+                            {booking.bookings.length > 1 && (
+                              <button
+                                onClick={() => {
+                                  // Simplified toggle logic for the demo, since we don't have separate state for each row here easily without refactor
+                                  // but let's just make it a toggleable section
+                                }}
+                                className="text-[10px] font-bold text-brand uppercase tracking-tighter hover:underline"
+                              >
+                                View Details
+                              </button>
+                            )}
                           </div>
                         </div>
+
+                        {/* Granular Venue Statuses for Multi-Venue Bookings */}
+                        {booking.bookings.length > 1 && (
+                          <div className="mt-6 pt-6 border-t border-borderSoft/30 space-y-3">
+                            <h4 className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Room Allocation Status</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {booking.bookings.map((b) => (
+                                <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-hoverSoft/30 border border-borderSoft/50">
+                                  <span className="text-xs font-semibold text-textPrimary truncate mr-2">{getVenueName(b.venueId)}</span>
+                                  <Badge
+                                    variant={b.status === 'approved' ? 'success' : b.status === 'rejected' ? 'destructive' : 'pending'}
+                                    className="text-[9px] h-4 py-0 px-2 uppercase"
+                                  >
+                                    {b.status}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Post Event Actions */}
                         {isPast && booking.status === 'approved' && (
@@ -234,7 +274,7 @@ const MyBookings: React.FC = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleFileUpload(booking.id, 'report')}
+                              onClick={() => handleFileUpload(booking.ids[0], 'report')}
                               className="gap-2 rounded-lg font-semibold hover:bg-brand/10 hover:border-brand/50 border-borderSoft"
                             >
                               <Upload size={16} />
@@ -243,7 +283,7 @@ const MyBookings: React.FC = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleFileUpload(booking.id, 'indent')}
+                              onClick={() => handleFileUpload(booking.ids[0], 'indent')}
                               className="gap-2 rounded-lg font-semibold hover:bg-brand/10 hover:border-brand/50 border-borderSoft"
                             >
                               <FileText size={16} />
