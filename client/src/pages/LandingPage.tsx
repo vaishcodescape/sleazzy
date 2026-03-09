@@ -175,6 +175,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
 
     useEffect(() => {
         const socket = getSocket();
+        if (!socket) return;
 
         const handleRefresh = () => {
             fetchEvents();
@@ -189,13 +190,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             socket.off(SOCKET_EVENTS.BOOKING_STATUS_CHANGED, handleRefresh);
             socket.off(SOCKET_EVENTS.BOOKING_NEW, handleRefresh);
         };
-    }, [fetchEvents]);
-
-    // Real-time: refresh when admin approves a booking (makes it public)
-    useEffect(() => {
-        const socket = getSocket();
-        socket.on(SOCKET_EVENTS.EVENTS_UPDATED, fetchEvents);
-        return () => { socket.off(SOCKET_EVENTS.EVENTS_UPDATED, fetchEvents); };
     }, [fetchEvents]);
 
     // Build calendar grid

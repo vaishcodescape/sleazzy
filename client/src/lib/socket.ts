@@ -68,6 +68,16 @@ class SocketService {
 
 export const socketService = new SocketService();
 
-export const getSocket = () => socketService.getSocketInstance();
+export const getSocket = () => {
+    const existing = socketService.getSocketInstance();
+    if (existing) return existing;
+
+    // Lazily initialize the singleton so callers can subscribe immediately.
+    void socketService.connect().catch((error) => {
+        console.warn('[Socket.io] Initial lazy connect failed:', error);
+    });
+
+    return socketService.getSocketInstance();
+};
 
 export { SOCKET_EVENTS };

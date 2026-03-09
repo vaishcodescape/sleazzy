@@ -17,7 +17,7 @@ import { supabase } from './supabaseClient';
 const app = express();
 const httpServer = createServer(app);
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(s => s.trim());
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3005').split(',').map(s => s.trim());
 
 export const io = new SocketIOServer(httpServer, {
   cors: {
