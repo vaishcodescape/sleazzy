@@ -180,6 +180,27 @@ Contributions are welcome! If you'd like to help improve Sleazzy:
 
 Feel free to open an issue for bug reports, feature requests, or questions.
 
+## Contributors
+
+Thanks to everyone who has helped shape Sleazzy. This project is better because of you.
+
+<p align="center">
+  <a href="https://github.com/ossdaiict/sleazzy/graphs/contributors">
+    <img
+      src="https://contrib.rocks/image?repo=ossdaiict/sleazzy"
+      alt="Contributors to Sleazzy — profile pictures linked to GitHub"
+    />
+  </a>
+</p>
+
+<p align="center">
+  <sub>
+    Avatars come from <a href="https://github.com/ossdaiict/sleazzy/graphs/contributors">GitHub contributors</a>
+    (powered by <a href="https://contrib.rocks">contrib.rocks</a>).
+    Using a fork? Change <code>ossdaiict/sleazzy</code> in the image URL to your <code>owner/repo</code>.
+  </sub>
+</p>
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

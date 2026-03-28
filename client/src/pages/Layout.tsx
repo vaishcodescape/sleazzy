@@ -1,13 +1,12 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { NavLink, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   CalendarPlus,
   CalendarDays,
   FileText,
   ShieldCheck,
-  Menu,
   Bell,
   LogOut,
   ClipboardList,
@@ -18,19 +17,12 @@ import { User } from '../types';
 import { Button } from '../components/ui/button';
 import { ThemeToggle } from '../components/theme-toggle';
 import NotificationPanel from '../components/NotificationPanel';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
+import { Logo } from '../components/Logo';
+import { GdgFooterCredit } from '../components/GdgFooterCredit';
 import { cn } from '@/lib/utils';
 import { getSocket } from '../lib/socket';
 import { toast } from 'sonner';
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 },
-  },
-};
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -38,10 +30,24 @@ interface LayoutProps {
   onLogout: () => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+const clubLinks = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/book', label: 'Book Slot', icon: CalendarPlus },
+  { to: '/my-bookings', label: 'My Bookings', icon: CalendarDays },
+  { to: '/policy', label: 'Policy', icon: FileText },
+];
 
-  // Global Notifications for Clubs
+const adminLinks = [
+  { to: '/', label: 'Dashboard', icon: ShieldCheck, end: true },
+  { to: '/admin/requests', label: 'Requests', icon: ClipboardList },
+  { to: '/admin/schedule', label: 'Schedule', icon: Layers },
+  { to: '/admin/clubs', label: 'Clubs', icon: Users },
+];
+
+const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
+  const location = useLocation();
+  const links = user.role === 'club' ? clubLinks : adminLinks;
+
   React.useEffect(() => {
     if (user.role !== 'club') return;
 
@@ -66,104 +72,71 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     };
   }, [user]);
 
-  const navClass = ({ isActive }: { isActive: boolean }) =>
+  const navItemClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-r-lg transition-all duration-200 text-sm font-medium relative",
+      'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative group',
       isActive
-        ? "text-brand bg-brand/5 border-l-[3px] border-brand font-semibold"
-        : "text-textMuted hover:text-textPrimary hover:bg-hoverSoft border-l-[3px] border-transparent"
+        ? 'text-brand bg-brand/8 font-semibold'
+        : 'text-textMuted hover:text-textPrimary hover:bg-hoverSoft'
     );
 
-  const renderNavLinks = () => {
-    if (user.role === 'club') {
-      return (
-        <>
-          <div className="px-4 py-2 text-xs font-bold text-textMuted/60 uppercase tracking-widest mb-2 mt-2">
-            Club Menu
-          </div>
-          <NavLink to="/" className={navClass} end>
-            <LayoutDashboard size={20} />
-            <span>Dashboard</span>
-          </NavLink>
-          <NavLink to="/book" className={navClass}>
-            <CalendarPlus size={20} />
-            <span>Book a Slot</span>
-          </NavLink>
-          <NavLink to="/my-bookings" className={navClass}>
-            <CalendarDays size={20} />
-            <span>My Bookings</span>
-          </NavLink>
-          <NavLink to="/policy" className={navClass}>
-            <FileText size={20} />
-            <span>Policy</span>
-          </NavLink>
-        </>
-      );
-    } else {
-      return (
-        <>
-          <div className="px-4 py-2 text-xs font-bold text-textMuted/60 uppercase tracking-widest mb-2 mt-2">
-            Admin Controls
-          </div>
-          <NavLink to="/" className={navClass} end>
-            <ShieldCheck size={20} />
-            <span>Admin Dashboard</span>
-          </NavLink>
-          <NavLink to="/admin/requests" className={navClass}>
-            <ClipboardList size={20} />
-            <span>Pending Requests</span>
-          </NavLink>
-          <NavLink to="/admin/schedule" className={navClass}>
-            <Layers size={20} />
-            <span>Master Schedule</span>
-          </NavLink>
-          <NavLink to="/admin/clubs" className={navClass}>
-            <Users size={20} />
-            <span>Manage Clubs</span>
-          </NavLink>
-        </>
-      );
-    }
-  };
+  const mobileNavClass = (isActive: boolean) =>
+    cn(
+      'flex flex-col items-center justify-center gap-0.5 py-1 px-2 rounded-xl transition-all duration-200 relative min-h-0',
+      isActive
+        ? 'text-brand'
+        : 'text-textMuted active:text-textPrimary'
+    );
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex bg-bgMain relative">
-      {/* Sidebar - Desktop (Fixed Tech Style) */}
-      <aside className="hidden md:flex flex-col w-64 lg:w-72 fixed h-full z-10 border-r border-borderSoft bg-card">
-        <div className="flex flex-col h-full flex-1 overflow-hidden">
+    <div className="min-h-dvh flex bg-bgMain relative">
+      {/* ====== Desktop Sidebar ====== */}
+      <aside className="hidden md:flex flex-col w-(--sidebar-width) fixed h-full z-10 border-r border-borderSoft bg-card/80 backdrop-blur-xl">
+        <div className="flex flex-col h-full">
+          {/* Logo */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="p-5 lg:p-6 border-b border-borderSoft flex items-center gap-3"
+            className="p-5 lg:p-6 border-b border-borderSoft"
           >
-            <motion.div
-              whileHover={{ scale: 1.05, rotate: 5 }}
-              className="w-8 h-8 bg-brand rounded-md flex items-center justify-center text-bgMain font-bold text-lg shadow-sm"
-            >
-              S
-            </motion.div>
-            <span className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-textPrimary to-textSecondary tracking-tight font-sans">Sleazzy</span>
+            <Logo size="md" />
           </motion.div>
 
-          <motion.nav
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto overscroll-contain scrollbar-hide"
-          >
-            {renderNavLinks()}
-          </motion.nav>
+          {/* Nav */}
+          <nav className="flex-1 flex flex-col gap-1 p-3 overflow-y-auto overscroll-contain scrollbar-hide">
+            <div className="px-3 py-2 text-[10px] font-bold text-textMuted/50 uppercase tracking-[0.15em] mt-1 mb-1">
+              {user.role === 'club' ? 'Club Menu' : 'Admin Controls'}
+            </div>
+            {links.map((link) => (
+              <NavLink key={link.to} to={link.to} className={navItemClass} end={link.end}>
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebar-active"
+                        className="absolute inset-0 bg-brand/8 rounded-xl"
+                        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      />
+                    )}
+                    <link.icon size={20} className="relative z-10" />
+                    <span className="relative z-10">{link.label}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </nav>
 
+          {/* User Card */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="p-4 border-t border-borderSoft/50"
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="p-3 border-t border-borderSoft"
           >
-            <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-hoverSoft/50 transition-colors cursor-pointer group">
-              <Avatar className="h-10 w-10 border border-borderSoft shrink-0 shadow-sm transition-all group-hover:border-brand">
-                <AvatarFallback className="bg-brand text-bgMain font-semibold text-sm">
+            <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-hoverSoft transition-colors group">
+              <Avatar className="h-10 w-10 border border-borderSoft shrink-0 shadow-sm transition-all group-hover:border-brand/50 ring-2 ring-brand/10">
+                <AvatarFallback className="bg-linear-to-br from-brand to-violet-500 text-white font-semibold text-sm">
                   {user.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -175,116 +148,119 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                   {user.role === 'club' ? `Group ${user.group}` : 'Administrator'}
                 </p>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onLogout}
+                className="h-8 w-8 rounded-lg text-textMuted hover:text-error hover:bg-error/10 shrink-0 opacity-0 group-hover:opacity-100 transition-all"
+              >
+                <LogOut size={16} />
+              </Button>
             </div>
           </motion.div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 md:ml-64 lg:ml-72 flex flex-col h-screen h-[100dvh]">
+      {/* ====== Main Content ====== */}
+      <div className="flex-1 md:ml-(--sidebar-width) flex flex-col min-h-dvh">
         {/* Header */}
         <motion.header
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="sticky top-0 z-20 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between safe-area-inset-top"
+          className="sticky top-0 z-20 px-4 sm:px-6 py-3 flex items-center justify-between bg-bgMain/80 backdrop-blur-xl border-b border-borderSoft/50"
+          style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}
         >
           <div className="flex items-center gap-3 min-w-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden shrink-0 h-9 w-9 rounded-md active:scale-95 border border-borderSoft bg-card hover:bg-hoverSoft flex items-center justify-center"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              <Menu size={18} />
-            </Button>
-            <div className="hidden md:block">
-              {/* Breadcrumb or simplified title could go here, or just keep it clean */}
+            {/* Mobile logo */}
+            <div className="md:hidden">
+              <Logo size="sm" showText={false} />
             </div>
-            <h1 className="text-lg sm:text-xl font-bold text-textPrimary truncate tracking-tight md:hidden">
-              {user.role === 'club' ? 'Club Portal' : 'Administration'}
+            <h1 className="text-base sm:text-lg font-bold text-textPrimary truncate tracking-tight md:hidden">
+              {links.find(l => l.end ? location.pathname === l.to : location.pathname.startsWith(l.to))?.label
+                ?? (user.role === 'club' ? 'Club Portal' : 'Administration')}
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="rounded-md border border-borderSoft shadow-sm bg-card flex items-center justify-center">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="rounded-lg border border-borderSoft/60 shadow-sm bg-card/80 backdrop-blur flex items-center justify-center">
               <ThemeToggle />
             </div>
-
             <NotificationPanel />
-
             <Button
               variant="ghost"
               size="sm"
               onClick={onLogout}
-              className="hidden sm:flex items-center gap-2 text-textMuted hover:text-error rounded-md h-9 px-3 font-medium transition-all shadow-sm border border-borderSoft bg-card"
+              className="hidden sm:flex items-center gap-2 text-textMuted hover:text-error rounded-lg h-9 px-3 font-medium transition-all border border-borderSoft/60 bg-card/80 backdrop-blur"
             >
-              <LogOut size={16} />
-              <span>Logout</span>
+              <LogOut size={15} />
+              <span className="hidden lg:inline">Logout</span>
             </Button>
           </div>
         </motion.header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto overscroll-contain pb-safe">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto overscroll-contain mb-bottom-nav">
           <div className="max-w-7xl mx-auto w-full">
-            {children}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </main>
 
-        {/* Footer */}
-        <footer className="border-t border-borderSoft py-4 px-6 text-center">
-          <p className="text-xs text-muted-foreground font-medium">
-            Made with ❤️ by GDG On Campus DAU
-          </p>
+        {/* Footer (desktop) */}
+        <footer className="hidden md:block border-t border-borderSoft/50 py-4 px-6">
+          <GdgFooterCredit compact className="max-w-none" />
         </footer>
       </div>
 
-      {/* Mobile Sidebar */}
-      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <SheetContent
-          side="left"
-          className="w-[min(85vw,320px)] sm:w-72 p-0 flex flex-col bg-card border-r border-borderSoft"
-        >
-          <SheetHeader className="p-5 sm:p-6 border-b border-borderSoft">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-brand rounded-md flex items-center justify-center text-bgMain font-bold text-lg shadow-sm">
-                S
-              </div>
-              <SheetTitle className="text-xl font-bold text-textPrimary">Sleazzy</SheetTitle>
-            </div>
-          </SheetHeader>
+      {/* ====== Mobile Bottom Navigation ====== */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-card/90 backdrop-blur-2xl border-t border-borderSoft/60 shadow-[0_-4px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_30px_rgba(0,0,0,0.3)]"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}
+      >
+        <div className="flex items-stretch justify-around px-2 py-1.5">
+          {links.map((link) => {
+            const isActive = link.end
+              ? location.pathname === link.to
+              : location.pathname.startsWith(link.to);
 
-          <nav className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto overscroll-contain">
-            {renderNavLinks()}
-          </nav>
-
-          <div className="p-4 border-t border-borderSoft">
-            <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-hoverSoft transition-colors">
-              <Avatar className="h-10 w-10 border border-borderSoft shrink-0">
-                <AvatarFallback className="bg-brand text-bgMain font-semibold text-sm">
-                  {user.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-textPrimary truncate">
-                  {user.name}
-                </p>
-                <p className="text-xs text-textMuted truncate">
-                  {user.role === 'club' ? `Group ${user.group}` : 'Administrator'}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              className="w-full mt-2 justify-start text-error hover:text-error hover:bg-error/10"
-              onClick={onLogout}
-            >
-              <LogOut size={18} className="mr-2" /> Logout
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+            return (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.end}
+                className={mobileNavClass(isActive)}
+              >
+                <div className="relative">
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobile-active"
+                      className="absolute -inset-2 bg-brand/10 rounded-full"
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                    />
+                  )}
+                  <link.icon size={22} className="relative z-10" />
+                </div>
+                <span className={cn(
+                  'text-[10px] font-semibold relative z-10',
+                  isActive ? 'text-brand' : 'text-textMuted'
+                )}>
+                  {link.label}
+                </span>
+              </NavLink>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 };

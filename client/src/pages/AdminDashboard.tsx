@@ -224,26 +224,27 @@ const AdminDashboard: React.FC = () => {
       className="space-y-6 sm:space-y-8"
     >
       {/* Enhanced Header */}
-      <div className="px-4">
+      <div className="px-1 sm:px-4">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
         >
-          <h2 className="text-5xl sm:text-6xl font-extrabold text-foreground tracking-tighter">Admin Dashboard</h2>
-          <p className="text-textSecondary mt-3 text-lg font-medium">Monitor venue bookings, manage approvals, and track system performance.</p>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-foreground tracking-tighter">Admin Dashboard</h2>
+          <p className="text-textSecondary mt-2 sm:mt-3 text-sm sm:text-base font-medium max-w-2xl">Monitor venue bookings, manage approvals, and track system performance.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
               onClick={() => setAddDialogOpen(true)}
-              className="gap-2 rounded-xl"
+              className="gap-2 rounded-xl h-10 font-semibold shadow-sm shadow-brand/15"
             >
               <Plus size={16} />
               Add Event
             </Button>
             <Button
+              variant="outline"
               onClick={exportAllEvents}
               disabled={isLoading || calendarEvents.length === 0}
-              className="gap-2 rounded-xl"
+              className="gap-2 rounded-xl h-10 font-semibold"
             >
               Export CSV
             </Button>
@@ -252,7 +253,7 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Enhanced Key Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 px-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 px-1 sm:px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -267,7 +268,7 @@ const AdminDashboard: React.FC = () => {
                   <AlertCircle size={18} />
                 </div>
               </div>
-              <div className="text-4xl sm:text-5xl font-extrabold text-textPrimary tracking-tight">{stats.pending}</div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-textPrimary tracking-tight">{stats.pending}</div>
               <p className="text-xs text-textMuted mt-2">Awaiting approval</p>
             </CardContent>
           </Card>
@@ -286,7 +287,7 @@ const AdminDashboard: React.FC = () => {
                   <CalendarIcon size={18} />
                 </div>
               </div>
-              <div className="text-4xl sm:text-5xl font-extrabold text-textPrimary tracking-tight">{stats.scheduled}</div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-textPrimary tracking-tight">{stats.scheduled}</div>
               <p className="text-xs text-textMuted mt-2">Confirmed events</p>
             </CardContent>
           </Card>
@@ -305,7 +306,7 @@ const AdminDashboard: React.FC = () => {
                   <XCircle size={18} />
                 </div>
               </div>
-              <div className="text-4xl sm:text-5xl font-extrabold text-textPrimary tracking-tight">{stats.conflicts}</div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-textPrimary tracking-tight">{stats.conflicts}</div>
               <p className="text-xs text-textMuted mt-2">Time overlaps</p>
             </CardContent>
           </Card>
@@ -325,7 +326,7 @@ const AdminDashboard: React.FC = () => {
                     <CheckCircle size={18} />
                   </div>
                 </div>
-                <div className="text-4xl sm:text-5xl font-extrabold text-textPrimary tracking-tight">{stats.activeClubs}</div>
+                <div className="text-3xl sm:text-4xl font-extrabold text-textPrimary tracking-tight">{stats.activeClubs}</div>
                 <p className="text-xs text-textMuted mt-2 flex items-center gap-1 group-hover:text-success transition-colors">
                   Manage Organizations <ChevronRight size={14} />
                 </p>

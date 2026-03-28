@@ -21,8 +21,8 @@ const PolicyPage: React.FC = () => {
         transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
         className="text-center pb-6 sm:pb-8 border-b border-borderSoft"
       >
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground tracking-tight">Sleazzy Slot Booking Policy</h1>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base font-medium">Guidelines for Venue Reservation and Conduct</p>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground tracking-tighter">Slot Booking Policy</h1>
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base font-medium max-w-lg mx-auto">Guidelines for venue reservation and campus event conduct</p>
       </motion.div>
 
       <Accordion type="single" collapsible defaultValue="item-0" className="space-y-3 sm:space-y-4">

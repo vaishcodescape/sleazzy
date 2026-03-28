@@ -97,8 +97,8 @@ const MyBookings: React.FC = () => {
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="min-w-0">
-          <motion.h2 className="text-4xl sm:text-5xl lg:text-5xl font-extrabold text-textPrimary tracking-tighter">My Bookings</motion.h2>
-          <p className="text-textSecondary mt-3 text-base sm:text-lg font-medium leading-relaxed">Track your venue reservations, manage schedules, and submit post-event documentation.</p>
+          <motion.h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-textPrimary tracking-tighter">My Bookings</motion.h2>
+          <p className="text-textSecondary mt-2 sm:mt-3 text-sm sm:text-base font-medium leading-relaxed max-w-xl">Track your venue reservations, manage schedules, and submit documentation.</p>
         </div>
       </div>
 

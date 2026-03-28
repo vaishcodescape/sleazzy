@@ -1,64 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
-/* Premium "Aurora" Theme */
+/* ================================================================
+   Premium "Aurora" Theme — Sleazzy
+   ================================================================ */
 :root {
-  /* Base - Light Mode - Premium Refined & Vibrant */
   --bgMain: #f8fafc;
-  /* Slightly cooler, cleaner slate-50 */
   --card: #ffffff;
   --borderSoft: rgba(203, 213, 225, 0.4);
-  /* Slate-200 based, slightly more visible */
   --hoverSoft: rgba(241, 245, 249, 0.9);
-  /* Slate-100 */
   --textPrimary: #0f172a;
-  /* Slate-900 for sharper text */
   --textSecondary: #334155;
-  /* Slate-700 */
   --textMuted: #64748b;
-  /* Slate-500 for better visibility */
 
-  /* Brand Colors - More Vibrant Indigo */
-  --brand: #4f46e5;
-  /* Indigo-600 for better contrast on light */
-  --brand-glow: rgba(79, 70, 229, 0.15);
-  --brandLink: #4338ca;
-  /* Indigo-700 */
+  --brand: #6366f1;
+  --brand-glow: rgba(99, 102, 241, 0.15);
+  --brandLink: #4f46e5;
 
   --success: #059669;
-  /* Emerald-600 */
   --error: #e11d48;
-  /* Rose-600 */
   --warning: #d97706;
-  /* Amber-600 */
 
   --popover: #ffffff;
   --popover-foreground: #0f172a;
   --accent: #f1f5f9;
   --accent-foreground: #0f172a;
 
-  /* Glass Utils */
   --glass-bg: rgba(255, 255, 255, 0.85);
   --glass-border: rgba(255, 255, 255, 0.6);
   --glass-blur: 16px;
+
+  --sidebar-width: 272px;
+  --bottom-nav-height: 72px;
 }
 
-/* Dark Mode - Deep Space Aurora */
 .dark {
   --bgMain: #030712;
-  /* Richer Black */
   --card: rgba(17, 24, 39, 0.6);
   --borderSoft: rgba(255, 255, 255, 0.1);
   --hoverSoft: rgba(255, 255, 255, 0.08);
-  /* More visible hover */
   --textPrimary: #F8FAFC;
   --textSecondary: #94A3B8;
   --textMuted: #64748B;
 
   --brand: #818cf8;
-  /* Indigo 400 */
   --brand-glow: rgba(129, 140, 248, 0.5);
   --brandLink: #a5b4fc;
 
@@ -67,19 +54,18 @@
   --warning: #fbbf24;
 
   --popover: #111827;
-  /* Dark gray solid */
   --popover-foreground: #F8FAFC;
   --accent: rgba(255, 255, 255, 0.1);
   --accent-foreground: #F8FAFC;
 
-  /* Glass Utils */
   --glass-bg: rgba(17, 24, 39, 0.65);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: 24px;
 }
 
 @theme inline {
-  --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
 
   --color-bgMain: var(--bgMain);
   --color-card: var(--card);
@@ -94,7 +80,6 @@
   --color-error: var(--error);
   --color-warning: var(--warning);
 
-  /* Radix UI Mapping */
   --color-background: var(--bgMain);
   --color-foreground: var(--textPrimary);
   --color-muted: var(--hoverSoft);
@@ -120,58 +105,71 @@
   --radius-sm: 0.5rem;
 }
 
+/* ================================================================
+   Base Layer
+   ================================================================ */
 @layer base {
   * {
     border-color: var(--borderSoft);
   }
 
   ::-webkit-scrollbar {
-    display: none;
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--borderSoft);
+    border-radius: 99px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--textMuted);
   }
 
   html {
     scroll-behavior: smooth;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply text-textPrimary antialiased min-h-screen selection:bg-brand selection:text-white;
+    @apply text-textPrimary min-h-screen selection:bg-brand/20 selection:text-brand;
     background-color: var(--bgMain);
-    /* Animated Gradient Background - Premium Gentle Flow */
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     background-image:
-      radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1), transparent 30%),
-      radial-gradient(circle at 90% 80%, rgba(244, 63, 94, 0.08), transparent 30%),
-      radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05), transparent 40%);
+      radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.06), transparent 35%),
+      radial-gradient(circle at 85% 75%, rgba(244, 63, 94, 0.04), transparent 35%),
+      radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.03), transparent 45%);
     background-attachment: fixed;
-    animation: backgroundFlow 20s ease-in-out infinite alternate;
-    transition: background 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  @keyframes backgroundFlow {
-    0% {
-      background-position: 0% 0%;
-    }
-
-    100% {
-      background-position: 100% 100%;
-    }
   }
 
   .dark body {
     background-color: #020617;
-    /* Very deep blue-black */
     background-image:
-      radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.2), transparent 40%),
-      radial-gradient(circle at 100% 0%, rgba(168, 85, 247, 0.15), transparent 40%),
-      radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.15), transparent 40%),
-      radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.15), transparent 40%);
+      radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.18), transparent 40%),
+      radial-gradient(circle at 100% 0%, rgba(168, 85, 247, 0.12), transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.12), transparent 40%),
+      radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.12), transparent 40%);
   }
+
+  /* Responsive typography scale */
+  h1, .h1 { @apply text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1]; }
+  h2, .h2 { @apply text-2xl sm:text-3xl font-bold tracking-tight; }
+  h3, .h3 { @apply text-xl sm:text-2xl font-bold tracking-tight; }
+  h4, .h4 { @apply text-lg font-semibold; }
 }
 
+/* ================================================================
+   Utility Layer
+   ================================================================ */
 @layer utilities {
-
-  /* Glassmorphism - The stars of the show */
   .glass {
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));
@@ -181,12 +179,10 @@
   }
 
   .glass-card {
-    /* Directly include properties instead of @apply glass */
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
-
     @apply rounded-2xl transition-all duration-300;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
   }
@@ -205,47 +201,31 @@
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
   }
 
-  /* Utility to hide scrollbars but keep functionality */
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  /* Text Gradients */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand to-purple-500;
+    @apply bg-clip-text text-transparent bg-linear-to-r from-brand to-purple-500;
   }
 
-  /* Enhanced button animations */
   @keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+  }
 
-    0%,
-    100% {
-      opacity: 1;
-    }
+  .btn-shimmer { animation: shimmer 2s infinite; }
 
-    50% {
-      opacity: 0.85;
+  /* Touch-friendly targets for mobile */
+  @media (pointer: coarse) {
+    button, a, [role="button"], input, select, textarea {
+      min-height: 44px;
     }
   }
 
-  .btn-shimmer {
-    animation: shimmer 2s infinite;
-  }
-
-  /* Smooth transitions for interactive elements */
-  button,
-  input,
-  select,
-  textarea {
+  button, input, select, textarea {
     @apply transition-all duration-200;
   }
 
-  /* Enhanced form input styling */
   input[type="text"],
   input[type="email"],
   input[type="password"],
@@ -256,20 +236,31 @@
     @apply focus:outline-none focus:ring-2 focus:ring-brand/30;
   }
 
-  /* Glass effect enhancement */
   .glass-effect {
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
+
+  /* Safe area padding utilities for mobile notches */
+  .pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px); }
+  .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+
+  /* Bottom nav safe area */
+  .mb-bottom-nav { margin-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px)); }
+
+  @media (min-width: 768px) {
+    .mb-bottom-nav { margin-bottom: 0; }
+  }
 }
 
-/* Day Picker Overrides for new theme */
+/* ================================================================
+   Day Picker Overrides
+   ================================================================ */
 .rdp {
   --rdp-cell-size: 2.5rem;
   --rdp-accent-color: var(--brand);
-  /* v9 uses hex, v8 uses var? RDP 9 usually doesn't use vars like this but we can try */
   margin: 0;
 }
 
@@ -283,19 +274,24 @@
   color: var(--brand);
 }
 
-/* Popover animation */
+/* ================================================================
+   Popover & Modal Animations
+   ================================================================ */
 @keyframes popoverSlide {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 [data-state="open"] {
   animation: popoverSlide 0.2s ease-out;
+}
+
+/* ================================================================
+   Mobile-specific Overrides
+   ================================================================ */
+@media (max-width: 639px) {
+  .rdp { --rdp-cell-size: 2.25rem; }
+
+  /* Reduce visual weight on mobile */
+  h1, .h1 { font-size: 1.75rem; }
 }

@@ -19,11 +19,11 @@ root.render(
       <Toaster
         richColors
         closeButton
-        position="top-right"
+        position="top-center"
         toastOptions={{
           classNames: {
-            toast: 'rounded-xl border border-borderSoft bg-card shadow-[0_8px_32px_rgba(16,24,40,0.12)]',
-            title: 'text-textPrimary font-medium',
+            toast: 'rounded-2xl border border-borderSoft bg-card/95 backdrop-blur-xl shadow-[0_8px_40px_rgba(16,24,40,0.14)]',
+            title: 'text-textPrimary font-semibold',
             description: 'text-textMuted text-sm',
             success: 'border-success/30',
             error: 'border-error/30',
