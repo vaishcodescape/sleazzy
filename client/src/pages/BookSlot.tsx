@@ -457,19 +457,19 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
       className="max-w-5xl mx-auto space-y-8 w-full pb-10 px-4"
     >
       {/* Enhanced Header */}
-      <div className="text-center space-y-4 mb-10">
+      <div className="text-center space-y-3 sm:space-y-4 mb-8 sm:mb-10">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-brand/10 border border-brand/30 mb-3"
+          className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-brand/8 border border-brand/20 mb-2"
         >
           <CalendarIcon className="w-4 h-4 text-brand mr-2" />
-          <span className="text-sm font-semibold text-brand">Venue Booking System</span>
+          <span className="text-xs sm:text-sm font-semibold text-brand">Venue Booking System</span>
         </motion.div>
 
         <motion.h1
-          className="text-5xl md:text-6xl font-extrabold tracking-tighter text-textPrimary"
+          className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter text-textPrimary"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -477,12 +477,12 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
           Book Your Venue
         </motion.h1>
         <motion.p
-          className="text-textSecondary text-lg max-w-2xl mx-auto leading-relaxed"
+          className="text-textSecondary text-sm sm:text-base max-w-xl mx-auto leading-relaxed"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          Schedule your next event seamlessly. Browse availability, select your perfect venue, and secure your booking in minutes.
+          Browse availability, select your venue, and secure your booking in minutes.
         </motion.p>
       </div>
 
@@ -490,7 +490,7 @@ const BookSlot: React.FC<BookSlotProps> = ({ currentUser }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="tech-card overflow-hidden shadow-md"
+        className="rounded-2xl border border-borderSoft bg-card/80 backdrop-blur-sm overflow-hidden shadow-sm"
       >
         {/* Progress Line */}
         <div className="h-1 w-full bg-borderSoft relative overflow-hidden">
