@@ -62,24 +62,26 @@ cp client/.env.example client/.env
 **`server/.env`**
 
 ```env
-SUPABASE_URL=<your-supabase-url>
-SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
-PORT=4000
+DATABASE_URL="" # Get the url from Dashboard -> Connection String, copy the snippet that starts with postgresql:// and paste it here
 
-# Optional — EmailJS for approval notifications
-EMAILJS_SERVICE_ID=
-EMAILJS_TEMPLATE_ID=
-EMAILJS_PUBLIC_KEY=
-EMAILJS_PRIVATE_KEY=
-APPROVAL_NOTIFY_EMAIL=
+PORT=3000
+NODE_ENV="development"
+
+
+# -----------------------------------------------------------------------------
+# AUTHENTICATION & SECURITY (If applicable)
+# -----------------------------------------------------------------------------
+# If your Express backend verifies JWT tokens or manages its own sessions, 
+# keep your existing server secrets here. 
+# SESSION_SECRET="your-existing-express-session-secret"
 ```
 
 **`client/.env`**
 
 ```env
-VITE_API_URL=http://localhost:4000
-VITE_SUPABASE_URL=<your-supabase-url>
-VITE_SUPABASE_ANON_KEY=<your-anon-key>
+NEXT_PUBLIC_NEON_AUTH_URL=""# Get the auth url from App Backend -> Auth -> COnfiguration section
+
+NEXT_PUBLIC_API_BASE_URL="http://localhost:3000/api"
 ```
 
 ### 4. Seed the database (optional)
