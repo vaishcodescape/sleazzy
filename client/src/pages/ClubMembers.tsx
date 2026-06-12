@@ -51,6 +51,7 @@ const ClubMembers: React.FC<ClubMembersProps> = ({ user }) => {
     is_core_member: true,
     tenure_start_date: '',
     tenure_end_date: '',
+    tenure_end_reason: '',
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -63,6 +64,7 @@ const ClubMembers: React.FC<ClubMembersProps> = ({ user }) => {
   const [resignDialogOpen, setResignDialogOpen] = useState(false);
   const [memberToResign, setMemberToResign] = useState<ClubMember | null>(null);
   const [resignDate, setResignDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [resignReason, setResignReason] = useState('Resigned');
   const [isResigning, setIsResigning] = useState(false);
 
   const isClubUser = user?.role === 'club';
@@ -135,6 +137,7 @@ const ClubMembers: React.FC<ClubMembersProps> = ({ user }) => {
       is_core_member: true,
       tenure_start_date: '',
       tenure_end_date: '',
+      tenure_end_reason: '',
     });
     setEditDialogOpen(true);
   };
@@ -150,6 +153,7 @@ const ClubMembers: React.FC<ClubMembersProps> = ({ user }) => {
       is_core_member: true,
       tenure_start_date: member.tenure_start_date ? member.tenure_start_date.split('T')[0] : '',
       tenure_end_date: member.tenure_end_date ? member.tenure_end_date.split('T')[0] : '',
+      tenure_end_reason: member.tenure_end_reason ?? '',
     });
     setEditDialogOpen(true);
   };
@@ -186,6 +190,7 @@ const ClubMembers: React.FC<ClubMembersProps> = ({ user }) => {
     if (isMemberActive) {
       setMemberToResign(member);
       setResignDate(new Date().toISOString().split('T')[0]);
+      setResignReason('Resigned');
       setResignDialogOpen(true);
     } else {
       setMemberToDelete(member);
@@ -202,6 +207,7 @@ const ClubMembers: React.FC<ClubMembersProps> = ({ user }) => {
         auth: true,
         body: {
           tenure_end_date: resignDate,
+          tenure_end_reason: resignReason,
         },
       });
       toastSuccess('Member resignation/impeachment recorded successfully');
@@ -266,6 +272,11 @@ const ClubMembers: React.FC<ClubMembersProps> = ({ user }) => {
             <span>
               Tenure: {member.tenure_start_date ? new Date(member.tenure_start_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'} –{' '}
               {member.tenure_end_date ? new Date(member.tenure_end_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Present'}
+            </span>
+          )}
+          {member.tenure_end_reason && (
+            <span className="font-semibold text-error/95">
+              Reason: {member.tenure_end_reason}
             </span>
           )}
         </div>
@@ -560,6 +571,19 @@ const ClubMembers: React.FC<ClubMembersProps> = ({ user }) => {
                 onChange={(e) => setResignDate(e.target.value)}
                 className="rounded-xl"
               />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="resign_reason">Reason for Ending Tenure *</Label>
+              <select
+                id="resign_reason"
+                value={resignReason}
+                onChange={(e) => setResignReason(e.target.value)}
+                className="flex h-10 w-full rounded-xl border border-borderSoft/80 dark:border-white/10 bg-white/90 dark:bg-white/5 backdrop-blur-sm px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand [&>option]:bg-card"
+              >
+                <option value="Resigned">Resigned</option>
+                <option value="Impeached">Impeached</option>
+                <option value="Tenure Ended">Tenure Ended</option>
+              </select>
             </div>
           </div>
           <DialogFooter>

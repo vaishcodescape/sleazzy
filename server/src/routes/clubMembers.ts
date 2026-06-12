@@ -12,7 +12,7 @@ const clubOnly = (req: express.Request, res: express.Response, next: express.Nex
   return next();
 };
 
-const MEMBER_EDITABLE_FIELDS = ['full_name', 'roll_number', 'email', 'designation', 'phone', 'tenure_start_date', 'tenure_end_date'] as const;
+const MEMBER_EDITABLE_FIELDS = ['full_name', 'roll_number', 'email', 'designation', 'phone', 'tenure_start_date', 'tenure_end_date', 'tenure_end_reason'] as const;
 
 /** Get public core members of all clubs */
 router.get('/public', async (req, res) => {
@@ -61,7 +61,7 @@ router.get('/', authMiddleware, async (req, res) => {
 
     const { rows } = await db.query(
       `SELECT id, club_id, full_name, roll_number, email, designation, phone,
-              is_core_member, tenure_start_date, tenure_end_date, created_at, updated_at
+              is_core_member, tenure_start_date, tenure_end_date, tenure_end_reason, created_at, updated_at
        FROM club_members
        WHERE club_id = $1
        ORDER BY CASE 
@@ -83,7 +83,7 @@ router.get('/', authMiddleware, async (req, res) => {
 
 /** Add a new member to the roster (club accounts only) */
 router.post('/', authMiddleware, clubOnly, async (req, res) => {
-  const { full_name, roll_number, email, designation, phone, tenure_start_date, tenure_end_date } = req.body;
+  const { full_name, roll_number, email, designation, phone, tenure_start_date, tenure_end_date, tenure_end_reason } = req.body;
 
   if (!full_name || !full_name.trim()) {
     return res.status(400).json({ error: 'Full name is required' });
@@ -106,10 +106,10 @@ router.post('/', authMiddleware, clubOnly, async (req, res) => {
     }
 
     const { rows } = await db.query(
-      `INSERT INTO club_members (club_id, full_name, roll_number, email, designation, phone, is_core_member, tenure_start_date, tenure_end_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO club_members (club_id, full_name, roll_number, email, designation, phone, is_core_member, tenure_start_date, tenure_end_date, tenure_end_reason)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id, club_id, full_name, roll_number, email, designation, phone,
-                 is_core_member, tenure_start_date, tenure_end_date, created_at, updated_at`,
+                 is_core_member, tenure_start_date, tenure_end_date, tenure_end_reason, created_at, updated_at`,
       [
         club.id,
         full_name.trim(),
@@ -120,6 +120,7 @@ router.post('/', authMiddleware, clubOnly, async (req, res) => {
         true, // is_core_member is always true now
         tenure_start_date && tenure_start_date.trim() ? tenure_start_date.trim() : null,
         tenure_end_date && tenure_end_date.trim() ? tenure_end_date.trim() : null,
+        tenure_end_reason && tenure_end_reason.trim() ? tenure_end_reason.trim() : null,
       ]
     );
 
@@ -193,7 +194,7 @@ router.patch('/:id', authMiddleware, clubOnly, async (req, res) => {
        SET ${updates.join(', ')}
        WHERE id = $${paramIndex} AND club_id = $${paramIndex + 1}
        RETURNING id, club_id, full_name, roll_number, email, designation, phone,
-                 is_core_member, tenure_start_date, tenure_end_date, created_at, updated_at`,
+                 is_core_member, tenure_start_date, tenure_end_date, tenure_end_reason, created_at, updated_at`,
       values
     );
 

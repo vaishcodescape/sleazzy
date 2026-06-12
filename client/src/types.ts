@@ -36,6 +36,7 @@ export interface ClubMember {
   is_core_member: boolean;
   tenure_start_date: string | null;
   tenure_end_date: string | null;
+  tenure_end_reason: string | null;
   created_at: string;
   updated_at: string;
 }

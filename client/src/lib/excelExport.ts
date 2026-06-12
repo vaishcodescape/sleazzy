@@ -56,6 +56,7 @@ export function exportRosterToExcel(members: ExportClubMember[]) {
         'Phone Number': m.phone ?? 'N/A',
         'Tenure Start': sDate,
         'Tenure End': eDate,
+        'Departure Reason': m.tenure_end_reason ?? 'N/A',
         'Status': statusText
       };
     });
@@ -71,6 +72,7 @@ export function exportRosterToExcel(members: ExportClubMember[]) {
       { wch: 16 }, // Phone Number
       { wch: 16 }, // Tenure Start
       { wch: 16 }, // Tenure End
+      { wch: 20 }, // Departure Reason
       { wch: 18 }  // Status
     ];
 
