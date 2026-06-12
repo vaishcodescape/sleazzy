@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { apiRequest } from '../lib/api';
 import { toastError, toastSuccess } from '../lib/toast';
@@ -9,10 +10,11 @@ import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Skeleton } from '../components/ui/skeleton';
-import { Edit2, Trash2, CalendarDays, ExternalLink, X, Search } from 'lucide-react';
+import { Edit2, Trash2, CalendarDays, ExternalLink, X, Search, Users, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { Booking } from '../types';
+import { exportRosterToExcel, ExportClubMember } from '../lib/excelExport';
 
 interface ApiClub {
     id: string;
@@ -23,6 +25,7 @@ interface ApiClub {
 }
 
 const AdminClubs: React.FC = () => {
+    const navigate = useNavigate();
     const [clubs, setClubs] = useState<ApiClub[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -32,6 +35,7 @@ const AdminClubs: React.FC = () => {
     const [editingClub, setEditingClub] = useState<ApiClub | null>(null);
     const [editFormData, setEditFormData] = useState({ name: '', groupCategory: '' });
     const [isSaving, setIsSaving] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     // Delete State
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -43,6 +47,35 @@ const AdminClubs: React.FC = () => {
     const [selectedClub, setSelectedClub] = useState<ApiClub | null>(null);
     const [clubEvents, setClubEvents] = useState<Booking[]>([]);
     const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+
+    const handleExportRoster = async () => {
+        setIsExporting(true);
+        try {
+            const data = await apiRequest<ExportClubMember[]>('/api/admin/club-members/all', { auth: true });
+            exportRosterToExcel(data);
+            toastSuccess('Roster exported successfully');
+        } catch (err) {
+            toastError(err, 'Failed to export roster');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const [exportingClubId, setExportingClubId] = useState<string | null>(null);
+
+    const handleExportSingleClub = async (club: ApiClub) => {
+        setExportingClubId(club.id);
+        try {
+            const data = await apiRequest<ExportClubMember[]>(`/api/club-members?clubId=${club.id}`, { auth: true });
+            const enriched = data.map(m => ({ ...m, club_name: club.name }));
+            exportRosterToExcel(enriched);
+            toastSuccess(`${club.name} roster exported successfully`);
+        } catch (err) {
+            toastError(err, 'Failed to export club roster');
+        } finally {
+            setExportingClubId(null);
+        }
+    };
 
     const fetchClubs = async () => {
         setIsLoading(true);
@@ -156,6 +189,16 @@ const AdminClubs: React.FC = () => {
                     <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tighter">Manage Clubs</h2>
                     <p className="text-textSecondary mt-2 text-base font-medium">View, edit, or remove clubs from the system.</p>
                 </div>
+                <div className="flex items-center gap-2 self-start md:self-end">
+                    <Button
+                        onClick={handleExportRoster}
+                        disabled={isExporting}
+                        className="gap-2 rounded-xl h-10 font-semibold shadow-sm shadow-brand/15 bg-brand text-white hover:bg-brand/90"
+                    >
+                        <Download size={16} />
+                        {isExporting ? 'Exporting...' : 'Export Roster (Excel)'}
+                    </Button>
+                </div>
             </div>
 
             <Card className="border border-borderSoft rounded-lg overflow-hidden bg-card shadow-sm">
@@ -214,6 +257,29 @@ const AdminClubs: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 px-2 text-textSecondary hover:text-brand"
+                                                    onClick={() => navigate(`/members?clubId=${club.id}`)}
+                                                    title="View Members"
+                                                >
+                                                    <Users className="h-4 w-4 mr-1.5" />
+                                                    <span className="hidden sm:inline">Members</span>
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 px-2 text-textSecondary hover:text-brand"
+                                                    onClick={() => handleExportSingleClub(club)}
+                                                    disabled={exportingClubId !== null}
+                                                    title="Export Club Roster"
+                                                >
+                                                    <Download className="h-4 w-4 mr-1.5" />
+                                                    <span className="hidden sm:inline">
+                                                        {exportingClubId === club.id ? 'Exporting...' : 'Export'}
+                                                    </span>
+                                                </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"

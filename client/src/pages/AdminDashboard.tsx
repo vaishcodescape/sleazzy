@@ -357,7 +357,7 @@ const AdminDashboard: React.FC = () => {
                   onSelect={setSelectedDate}
                   events={calendarEventsWithVenue}
                   modifiers={{ hasEvents: eventDates }}
-                  modifierClassNames={{
+                  modifiersClassNames={{
                     hasEvents: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary"
                   }}
                   className="rounded-2xl"
@@ -539,7 +539,7 @@ const AdminDashboard: React.FC = () => {
               ) : (
                 pendingRequests.map((req, index) => (
                   <motion.div
-                    key={req.id}
+                    key={req.batchId || req.ids?.[0] || index}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.1 }}

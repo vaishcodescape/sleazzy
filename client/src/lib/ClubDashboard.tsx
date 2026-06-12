@@ -231,7 +231,7 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
                     onSelect={setSelectedDate}
                     events={calendarEventsWithVenue}
                     modifiers={{ hasEvents: eventDates }}
-                    modifierClassNames={{
+                    modifiersClassNames={{
                       hasEvents: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-primary"
                     }}
                     className="rounded-2xl"
@@ -382,7 +382,7 @@ const ClubDashboard: React.FC<ClubDashboardProps> = ({ user }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {upcomingEvents.map((event, index) => (
                   <motion.div
-                    key={event.id}
+                    key={event.batchId || event.ids?.[0] || index}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ChevronLeft,
@@ -73,7 +74,9 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
+    const navigate = useNavigate();
     const [events, setEvents] = useState<PublicEvent[]>([]);
+    const [publicMembers, setPublicMembers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentMonth, setCurrentMonth] = useState(() => {
         const now = new Date();
@@ -86,11 +89,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
     const fetchEvents = useCallback(async () => {
         try {
             setLoading(true);
-            const [bookings, venuesData] = await Promise.all([
+            const [bookings, venuesData, membersData] = await Promise.all([
                 apiRequest<ApiBooking[]>('/api/public-bookings'),
                 apiRequest<ApiVenue[]>('/api/venues'),
+                apiRequest<any[]>('/api/club-members/public').catch(() => []),
             ]);
             setVenues(venuesData);
+            setPublicMembers(membersData);
             const mapped = bookings.map(mapBooking);
             const grouped = groupBookings(mapped, venuesData);
 
@@ -167,6 +172,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
 
     const today = useMemo(() => new Date(), []);
 
+    const groupedCommittees = useMemo(() => {
+        const groups: Record<string, any[]> = {};
+        for (const m of publicMembers) {
+            const clubName = m.club_name;
+            if (!groups[clubName]) {
+                groups[clubName] = [];
+            }
+            groups[clubName].push(m);
+        }
+        return groups;
+    }, [publicMembers]);
+
+    const formatTenure = (start?: string, end?: string) => {
+        if (!start && !end) return 'Not Specified';
+        const sStr = start ? new Date(start).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) : 'N/A';
+        const eStr = end ? new Date(end).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }) : 'Present';
+        return `${sStr} – ${eStr}`;
+    };
+
     const goToPrevMonth = () => {
         setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
     };
@@ -196,8 +220,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                     <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-2 sm:gap-3"
+                        className="flex items-center gap-2 sm:gap-4"
                     >
+                        <Button
+                            variant="ghost"
+                            onClick={() => navigate('/')}
+                            className="rounded-xl h-10 px-4 font-semibold text-brand bg-brand/5 hover:bg-brand/10 transition-all"
+                        >
+                            Home
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            onClick={() => navigate('/clubs-committees')}
+                            className="rounded-xl h-10 px-4 font-semibold text-textSecondary hover:text-textPrimary hover:bg-hoverSoft transition-all"
+                        >
+                            Clubs & Committees
+                        </Button>
                         <ThemeToggle />
                         <Button
                             onClick={onGoToLogin}
@@ -398,7 +436,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                 </div>
 
                 {/* ====== Upcoming Events ====== */}
-                <div className="mt-6 rounded-2xl border border-borderSoft bg-card/80 backdrop-blur-sm shadow-sm overflow-hidden">
+                <div className="mt-8 rounded-2xl border border-borderSoft bg-card/80 backdrop-blur-sm shadow-sm overflow-hidden">
                     <div className="px-4 sm:px-6 py-4 border-b border-borderSoft bg-hoverSoft/30">
                         <h3 className="text-base sm:text-lg font-bold text-textPrimary tracking-tight">Upcoming Events</h3>
                         <p className="text-xs sm:text-sm text-textSecondary mt-0.5">

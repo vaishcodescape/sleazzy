@@ -51,7 +51,7 @@ const GradientButton = React.forwardRef<HTMLButtonElement, GradientButtonProps>(
         <Slot
           ref={ref}
           className={cn(baseClasses, sizeClasses[size], variantClasses[variant], className)}
-          {...(props as React.ComponentPropsWithoutRef<typeof Slot>)}
+          {...(props as any)}
         >
           {children}
         </Slot>

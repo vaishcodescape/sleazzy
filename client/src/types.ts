@@ -34,6 +34,8 @@ export interface ClubMember {
   designation: string | null;
   phone: string | null;
   is_core_member: boolean;
+  tenure_start_date: string | null;
+  tenure_end_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -59,6 +61,7 @@ export interface Booking {
   isPublic: boolean;
   startTimeISO?: string;
   endTimeISO?: string;
+  venueName?: string;
 }
 
 export interface GroupedBooking extends Omit<Booking, 'id' | 'venueId' | 'status'> {

@@ -380,4 +380,26 @@ router.get('/clubs/:id/bookings', async (req, res) => {
   }
 });
 
+router.get('/club-members/all', async (_req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT cm.id, cm.club_id, cm.full_name, cm.roll_number, cm.email, cm.designation, cm.phone,
+             cm.tenure_start_date, cm.tenure_end_date, c.name as club_name
+      FROM club_members cm
+      JOIN clubs c ON cm.club_id = c.id
+      ORDER BY c.name ASC,
+               CASE 
+                 WHEN cm.designation = 'Convenor' THEN 1
+                 WHEN cm.designation = 'Dy. Convener' THEN 2
+                 WHEN cm.designation = 'Core' THEN 3
+                 ELSE 4
+               END ASC,
+               cm.full_name ASC
+    `);
+    return res.json(rows);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

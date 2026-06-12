@@ -43,6 +43,7 @@ const adminLinks = [
   { to: '/admin/requests', label: 'Requests', icon: ClipboardList },
   { to: '/admin/schedule', label: 'Schedule', icon: Layers },
   { to: '/admin/clubs', label: 'Clubs', icon: Users },
+  { to: '/members', label: 'Members', icon: Users },
 ];
 
 const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
